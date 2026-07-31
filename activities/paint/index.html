@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paint by Number</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFF6E9;
+    --panel:#FFFFFF;
+    --ink:#3A3355;
+    --ink-soft:#8A83A6;
+    --coral:#FF6F61;
+    --yellow:#FFC93C;
+    --mint:#3FBFB0;
+    --sky:#5DADE2;
+    --line:#E7DFCF;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 10% 15%, #FFEFD1 0%, transparent 35%),
+      radial-gradient(circle at 90% 85%, #E8F7F4 0%, transparent 40%);
+    font-family:'Nunito', sans-serif;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:20px 14px 48px;
+  }
+  .wrap{width:100%;max-width:480px;}
+  header{text-align:center;margin-bottom:16px;}
+  h1{
+    font-family:'Fredoka',sans-serif;
+    font-weight:700;
+    font-size:clamp(26px,7vw,34px);
+    margin:0 0 4px;
+    color:var(--ink);
+    letter-spacing:0.5px;
+  }
+  header p{margin:0;color:var(--ink-soft);font-weight:700;font-size:14px;}
+
+  .tabs{display:flex;gap:8px;justify-content:center;margin:18px 0 14px;}
+  .tab{
+    border:none;
+    background:var(--panel);
+    border:2px solid var(--line);
+    border-radius:16px;
+    padding:8px 14px;
+    font-family:'Fredoka',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    transition:transform .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .tab span.ico{font-size:18px;}
+  .tab.active{
+    border-color:var(--coral);
+    color:var(--coral);
+    background:#FFF0EC;
+    transform:translateY(-2px);
+  }
+  .tab:active{transform:scale(0.96);}
+
+  .card{
+    background:var(--panel);
+    border-radius:24px;
+    padding:16px;
+    box-shadow:0 10px 30px rgba(58,51,85,0.08);
+    border:1px solid var(--line);
+  }
+
+  .progress-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .progress-track{flex:1;height:10px;border-radius:6px;background:#F1ECDD;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--coral),var(--yellow));width:0%;transition:width .35s ease;}
+  .progress-label{font-size:12px;font-weight:800;color:var(--ink-soft);white-space:nowrap;}
+
+  .palette{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    justify-content:center;
+    margin-bottom:16px;
+  }
+  .swatch{
+    width:42px;height:42px;
+    border-radius:50%;
+    border:3px solid transparent;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fredoka',sans-serif;
+    font-weight:600;
+    font-size:16px;
+    color:rgba(0,0,0,0.55);
+    cursor:pointer;
+    position:relative;
+    transition:transform .15s ease;
+  }
+  .swatch.selected{
+    border-color:var(--ink);
+    transform:scale(1.12);
+  }
+  .swatch.done{opacity:0.35;}
+  .swatch:active{transform:scale(0.94);}
+
+  .grid-shell{
+    width:100%;
+    aspect-ratio: var(--cols) / var(--rows);
+    background:#FBF8F1;
+    border-radius:14px;
+    padding:6px;
+    border:1px solid var(--line);
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(var(--cols), 1fr);
+    grid-template-rows:repeat(var(--rows), 1fr);
+    width:100%;
+    height:100%;
+    gap:1px;
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .cell{
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fredoka',sans-serif;
+    font-weight:600;
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .cell.empty{background:transparent;}
+  .cell.blank{
+    background:#FDFBF6;
+    color:#C9C2E0;
+    font-size:9px;
+    cursor:pointer;
+    border:1px solid #EFE9DA;
+  }
+  .cell.blank:active{background:#F3EEE0;}
+  .cell.filled{
+    color:transparent;
+    animation:pop .28s ease;
+  }
+  .cell.shake{animation:shake .3s ease;}
+  @keyframes pop{
+    0%{transform:scale(0.55);}
+    60%{transform:scale(1.12);}
+    100%{transform:scale(1);}
+  }
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-3px);}
+    75%{transform:translateX(3px);}
+  }
+
+  .controls{display:flex;justify-content:center;margin-top:16px;}
+  .reset-btn{
+    border:none;
+    background:transparent;
+    color:var(--ink-soft);
+    font-family:'Nunito',sans-serif;
+    font-weight:800;
+    font-size:13px;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:6px 10px;
+  }
+
+  .overlay{
+    position:fixed;inset:0;
+    background:rgba(58,51,85,0.55);
+    display:none;
+    align-items:center;justify-content:center;
+    padding:24px;
+    z-index:10;
+  }
+  .overlay.show{display:flex;}
+  .celebrate-card{
+    background:var(--panel);
+    border-radius:24px;
+    padding:28px 24px;
+    text-align:center;
+    max-width:320px;
+    animation:pop .35s ease;
+  }
+  .celebrate-card .big{font-size:52px;margin-bottom:6px;}
+  .celebrate-card h2{
+    font-family:'Fredoka',sans-serif;
+    margin:0 0 6px;
+    font-size:24px;
+    color:var(--coral);
+  }
+  .celebrate-card p{margin:0 0 18px;color:var(--ink-soft);font-weight:700;font-size:14px;}
+  .celebrate-card button{
+    border:none;
+    background:var(--coral);
+    color:white;
+    font-family:'Fredoka',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    padding:12px 22px;
+    border-radius:14px;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Paint by Number</h1>
+    <p>Tap a color, then tap the matching squares</p>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="card">
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">0%</div>
+    </div>
+    <div class="palette" id="palette"></div>
+    <div class="grid-shell">
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="controls">
+      <button class="reset-btn" id="resetBtn">Clear this picture</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="celebrate-card">
+    <div class="big" id="celebrateEmoji">🎉</div>
+    <h2>You did it!</h2>
+    <p id="celebrateText">The picture is finished. Nice work!</p>
+    <button id="celebrateClose">Yay!</button>
+  </div>
+</div>
+
+<script>
+// ---------- shape generators ----------
+function inTriangle(px,py, ax,ay,bx,by,cx,cy){
+  const d1=(px-ax)*(by-ay)-(bx-ax)*(py-ay);
+  const d2=(px-bx)*(cy-by)-(cx-bx)*(py-by);
+  const d3=(px-cx)*(ay-cy)-(ax-cx)*(py-cy);
+  const hasNeg=(d1<0)||(d2<0)||(d3<0);
+  const hasPos=(d1>0)||(d2>0)||(d3>0);
+  return !(hasNeg && hasPos);
+}
+function inRect(px,py,x0,y0,x1,y1){return px>=x0&&px<=x1&&py>=y0&&py<=y1;}
+
+function catShape(col,row){
+  const dHead=Math.hypot(col-9,row-12);
+  const earLin=inTriangle(col,row,4,6.5,6,3.3,6.6,7.2);
+  const earRin=inTriangle(col,row,14,6.5,12,3.3,11.4,7.2);
+  const earL=inTriangle(col,row,3,7,6,2,7,8);
+  const earR=inTriangle(col,row,15,7,12,2,11,8);
+  if(earLin||earRin) return 3;
+  if(earL||earR) return 2;
+  if(dHead<6.2){
+    if(Math.hypot(col-6.3,row-11)<0.9 || Math.hypot(col-11.7,row-11)<0.9) return 4;
+    if(inTriangle(col,row,8.5,13,9.5,13,9,13.8)) return 5;
+    return 1;
+  }
+  return 0;
+}
+function iceCreamShape(col,row){
+  if(Math.hypot(col-9,row-2.6)<1.15) return 5;
+  if(Math.hypot(col-9,row-5.6)<3.0 && row<7.6) return 4;
+  if(Math.hypot(col-9,row-10.8)<3.6 && row<13.2 && row>=6.5) return 1;
+  if(inTriangle(col,row,6.3,13.2,11.7,13.2,9,19.2)) return 6;
+  return 0;
+}
+function rocketShape(col,row){
+  const window=Math.hypot(col-9,row-9.2)<1.7;
+  const nose=inTriangle(col,row,6.2,6.2,11.8,6.2,9,0.5);
+  const body=inRect(col,row,6.2,6.2,11.8,15.5);
+  const finL=inTriangle(col,row,6.2,12,6.2,17,2.5,18);
+  const finR=inTriangle(col,row,11.8,12,11.8,17,15.5,18);
+  const flame=inTriangle(col,row,7,15.6,11,15.6,9,19.3);
+  if(window && body) return 4;
+  if(nose) return 1;
+  if(body) return 2;
+  if(finL||finR) return 3;
+  if(flame) return 5;
+  return 0;
+}
+
+const COLS=18, ROWS=20;
+function buildGrid(fn){
+  const g=[];
+  for(let r=0;r<ROWS;r++){
+    const row=[];
+    for(let c=0;c<COLS;c++) row.push(fn(c,r));
+    g.push(row);
+  }
+  return g;
+}
+
+const PICTURES=[
+  {
+    id:'cat', label:'Cat', icon:'🐱',
+    grid:buildGrid(catShape),
+    palette:{1:'#F5B87D',2:'#F5B87D',3:'#FF9BB0',4:'#3A3355',5:'#E85D5D'},
+    celebrateEmoji:'🐾',
+    celebrateText:'Meow-velous! The cat is all painted up.'
+  },
+  {
+    id:'icecream', label:'Ice Cream', icon:'🍦',
+    grid:buildGrid(iceCreamShape),
+    palette:{1:'#FF9BC0',4:'#3FBFB0',5:'#E85D5D',6:'#E0AE73'},
+    celebrateEmoji:'🍧',
+    celebrateText:'Sweet! One delicious ice cream, coming right up.'
+  },
+  {
+    id:'rocket', label:'Rocket', icon:'🚀',
+    grid:buildGrid(rocketShape),
+    palette:{1:'#E85D5D',2:'#E9E4D8',3:'#5DADE2',4:'#BEE7F2',5:'#FFC93C'},
+    celebrateEmoji:'✨',
+    celebrateText:'Blast off! That rocket is ready to fly.'
+  }
+];
+
+// ---------- state ----------
+let currentIdx=0;
+let selectedNum=null;
+let filledState={}; // per picture id -> Set of "r-c" keys
+
+PICTURES.forEach(p=>filledState[p.id]=new Set());
+
+const tabsEl=document.getElementById('tabs');
+const paletteEl=document.getElementById('palette');
+const gridEl=document.getElementById('grid');
+const progressFill=document.getElementById('progressFill');
+const progressLabel=document.getElementById('progressLabel');
+const overlay=document.getElementById('overlay');
+const resetBtn=document.getElementById('resetBtn');
+
+function totalPaintable(picture){
+  let n=0;
+  picture.grid.forEach(row=>row.forEach(v=>{if(v!==0)n++;}));
+  return n;
+}
+
+function renderTabs(){
+  tabsEl.innerHTML='';
+  PICTURES.forEach((p,i)=>{
+    const btn=document.createElement('button');
+    btn.className='tab'+(i===currentIdx?' active':'');
+    btn.innerHTML='<span class="ico">'+p.icon+'</span>'+p.label;
+    btn.onclick=()=>{currentIdx=i;selectedNum=null;renderAll();};
+    tabsEl.appendChild(btn);
+  });
+}
+
+function renderPalette(){
+  const picture=PICTURES[currentIdx];
+  paletteEl.innerHTML='';
+  const filled=filledState[picture.id];
+  const nums=Object.keys(picture.palette).map(Number).sort((a,b)=>a-b);
+  nums.forEach(num=>{
+    const remaining=countRemaining(picture, num, filled);
+    const sw=document.createElement('div');
+    sw.className='swatch'+(selectedNum===num?' selected':'')+(remaining===0?' done':'');
+    sw.style.background=picture.palette[num];
+    sw.textContent=remaining===0?'✓':num;
+    sw.onclick=()=>{
+      if(remaining===0) return;
+      selectedNum=(selectedNum===num)?null:num;
+      renderPalette();
+      renderGrid();
+    };
+    paletteEl.appendChild(sw);
+  });
+}
+
+function countRemaining(picture, num, filled){
+  let n=0;
+  picture.grid.forEach((row,r)=>row.forEach((v,c)=>{
+    if(v===num && !filled.has(r+'-'+c)) n++;
+  }));
+  return n;
+}
+
+function renderGrid(){
+  const picture=PICTURES[currentIdx];
+  gridEl.style.setProperty('--cols',COLS);
+  gridEl.style.setProperty('--rows',ROWS);
+  document.querySelector('.grid-shell').style.setProperty('--cols',COLS);
+  document.querySelector('.grid-shell').style.setProperty('--rows',ROWS);
+  gridEl.innerHTML='';
+  const filled=filledState[picture.id];
+  picture.grid.forEach((row,r)=>{
+    row.forEach((v,c)=>{
+      const cell=document.createElement('div');
+      const key=r+'-'+c;
+      if(v===0){
+        cell.className='cell empty';
+      } else if(filled.has(key)){
+        cell.className='cell filled';
+        cell.style.background=picture.palette[v];
+      } else {
+        cell.className='cell blank';
+        cell.textContent=v;
+        cell.onclick=()=>handleCellClick(picture, r, c, v, cell);
+      }
+      gridEl.appendChild(cell);
+    });
+  });
+}
+
+function handleCellClick(picture, r, c, value, cellEl){
+  if(selectedNum===null){
+    cellEl.classList.remove('shake');
+    void cellEl.offsetWidth;
+    cellEl.classList.add('shake');
+    return;
+  }
+  if(value!==selectedNum){
+    cellEl.classList.remove('shake');
+    void cellEl.offsetWidth;
+    cellEl.classList.add('shake');
+    return;
+  }
+  filledState[picture.id].add(r+'-'+c);
+  renderGrid();
+  renderPalette();
+  updateProgress();
+  checkComplete(picture);
+}
+
+function updateProgress(){
+  const picture=PICTURES[currentIdx];
+  const total=totalPaintable(picture);
+  const done=filledState[picture.id].size;
+  const pct=total===0?0:Math.round((done/total)*100);
+  progressFill.style.width=pct+'%';
+  progressLabel.textContent=pct+'%';
+}
+
+function checkComplete(picture){
+  const total=totalPaintable(picture);
+  const done=filledState[picture.id].size;
+  if(done===total){
+    document.getElementById('celebrateEmoji').textContent=picture.celebrateEmoji;
+    document.getElementById('celebrateText').textContent=picture.celebrateText;
+    setTimeout(()=>overlay.classList.add('show'),250);
+  }
+}
+
+resetBtn.onclick=()=>{
+  const picture=PICTURES[currentIdx];
+  filledState[picture.id]=new Set();
+  selectedNum=null;
+  renderAll();
+};
+
+document.getElementById('celebrateClose').onclick=()=>{
+  overlay.classList.remove('show');
+};
+
+function renderAll(){
+  renderTabs();
+  renderPalette();
+  renderGrid();
+  updateProgress();
+}
+
+renderAll();
+</script>
+</body>
+</html>
