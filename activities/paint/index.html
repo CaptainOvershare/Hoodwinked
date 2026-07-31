@@ -121,7 +121,7 @@
     gap:1px;
     border-radius:8px;
     overflow:hidden;
-    margin:0 auto; /* centers when the picture is narrower than the card */
+    margin:0 auto;
   }
   .cell{
     display:flex;align-items:center;justify-content:center;
@@ -170,6 +170,15 @@
     text-decoration:underline;
     cursor:pointer;
     padding:6px 10px;
+  }
+  .credit{
+    text-align:center;
+    margin-top:18px;
+    font-family:'Quicksand', sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:var(--ink-soft);
+    letter-spacing:0.2px;
   }
   .overlay{
     position:fixed;inset:0;
@@ -234,6 +243,7 @@
       <button class="reset-btn" id="resetBtn">Clear this picture</button>
     </div>
   </div>
+  <div class="credit">❤️ Built with love by Uncle Jon</div>
 </div>
 <div class="overlay" id="overlay">
   <div class="celebrate-card">
@@ -560,11 +570,11 @@ const JACK_PALETTE = {
 };
 const PICTURES=[
   { id:'walnut', label:'Walnut', cols:46, rows:46, grid:WALNUT_GRID, palette:WALNUT_PALETTE,
-    celebrateText:'That good boy is fully painted. Let's do it again!.' },
+    celebrateText:'That good boy is fully painted. Let\'s do it again!' },
   { id:'abbynorman', label:'Norman & Abby', cols:56, rows:42, grid:ABBYNORMAN_GRID, palette:ABBYNORMAN_PALETTE,
     celebrateText:'Mema and Granddad\'s good pups, fully painted! Long car ride well spent.' },
   { id:'clark', label:'Clark', cols:48, rows:36, grid:CLARK_GRID, palette:CLARK_PALETTE,
-    celebrateText:'Clark the puppy is all painted up! He's so cutee!' },
+    celebrateText:'Clark the puppy is all painted up! He\'s so cute!' },
   { id:'ravendog', label:'Raven', cols:42, rows:42, grid:RAVENDOG_GRID, palette:RAVENDOG_PALETTE,
     celebrateText:'Raven and her tennis ball, fully painted! Fetch complete.' },
   { id:'jack', label:'Jack', cols:42, rows:52, grid:JACK_GRID, palette:JACK_PALETTE,
