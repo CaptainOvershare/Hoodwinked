@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Paint by Number</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
@@ -18,6 +18,7 @@
     --mustard:#E3A73A;
     --sage:#8FA678;
     --line:#E5DCC4;
+    --cell-size: 16px; /* default, gets overwritten by JS */
   }
   *{box-sizing:border-box;}
   body{
@@ -31,29 +32,35 @@
     color:var(--ink);
     display:flex;
     justify-content:center;
-    padding:20px 14px 48px;
+    padding:16px 12px 32px;
   }
-  .wrap{width:100%;max-width:480px;}
-  header{text-align:center;margin-bottom:16px;}
+  .wrap{
+    width:100%;
+    max-width:480px;
+    display:flex;
+    flex-direction:column;
+    min-height:calc(100vh - 48px);
+  }
+  header{text-align:center;margin-bottom:12px;flex-shrink:0;}
   h1{
     font-family:'Baloo 2',sans-serif;
     font-weight:800;
-    font-size:clamp(26px,7vw,34px);
-    margin:0 0 4px;
+    font-size:clamp(24px,6.5vw,32px);
+    margin:0 0 2px;
     color:var(--blue-deep);
     letter-spacing:0.3px;
   }
-  header p{margin:0;color:var(--ink-soft);font-weight:600;font-size:14px;}
-  .tabs{display:flex;gap:8px;justify-content:center;margin:18px 0 14px;flex-wrap:wrap;}
+  header p{margin:0;color:var(--ink-soft);font-weight:600;font-size:13px;}
+  .tabs{display:flex;gap:6px;justify-content:center;margin:12px 0 10px;flex-wrap:wrap;flex-shrink:0;}
   .tab{
     border:none;
     background:var(--panel);
     border:2px solid var(--line);
-    border-radius:14px;
-    padding:9px 16px;
+    border-radius:12px;
+    padding:7px 13px;
     font-family:'Baloo 2',sans-serif;
     font-weight:600;
-    font-size:14px;
+    font-size:13px;
     color:var(--ink-soft);
     cursor:pointer;
     transition:transform .15s ease, border-color .15s ease, color .15s ease, background .15s ease;
@@ -62,66 +69,72 @@
     border-color:var(--rust);
     color:var(--rust);
     background:#FCEFE4;
-    transform:translateY(-2px);
+    transform:translateY(-1px);
   }
   .tab:active{transform:scale(0.96);}
   .card{
     background:var(--panel);
-    border-radius:22px;
-    padding:16px;
+    border-radius:20px;
+    padding:14px;
     box-shadow:0 10px 30px rgba(62,50,38,0.10);
     border:1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+    flex:1;
+    min-height:0; /* critical for flex child scrolling / sizing */
   }
-  .progress-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-  .progress-track{flex:1;height:10px;border-radius:6px;background:#EFE6D2;overflow:hidden;}
+  .progress-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-shrink:0;}
+  .progress-track{flex:1;height:9px;border-radius:6px;background:#EFE6D2;overflow:hidden;}
   .progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--rust),var(--mustard));width:0%;transition:width .35s ease;}
   .progress-label{font-size:12px;font-weight:700;color:var(--ink-soft);white-space:nowrap;}
   .palette{
     display:flex;
     flex-wrap:wrap;
-    gap:8px;
+    gap:7px;
     justify-content:center;
-    margin-bottom:16px;
+    margin-bottom:12px;
+    flex-shrink:0;
   }
   .swatch{
-    width:36px;height:36px;
+    width:34px;height:34px;
     border-radius:50%;
     border:3px solid transparent;
     display:flex;align-items:center;justify-content:center;
     font-family:'Baloo 2',sans-serif;
     font-weight:600;
-    font-size:13px;
+    font-size:12px;
     color:rgba(0,0,0,0.55);
     cursor:pointer;
     transition:transform .15s ease;
   }
   .swatch.selected{
     border-color:var(--blue-deep);
-    transform:scale(1.14);
+    transform:scale(1.12);
   }
   .swatch.done{opacity:0.35;}
   .swatch:active{transform:scale(0.94);}
 
-  /* ===== FIXED MOBILE GRID ===== */
+  /* ===== NO-SCROLLBAR FITTING GRID ===== */
   .grid-shell{
     width:100%;
     background:#FAF4E6;
-    border-radius:14px;
-    padding:6px;
+    border-radius:12px;
+    padding:5px;
     border:1px solid var(--line);
-    overflow:auto;
-    -webkit-overflow-scrolling:touch;
-    max-height:min(68vh, 560px);
+    overflow:hidden;          /* no scrollbars */
+    flex:1;
+    min-height:240px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
   }
   .grid{
     display:grid;
-    grid-template-columns:repeat(var(--cols), 22px);
-    grid-template-rows:repeat(var(--rows), 22px);
-    width:max-content;
+    grid-template-columns:repeat(var(--cols), var(--cell-size));
+    grid-template-rows:repeat(var(--rows), var(--cell-size));
     gap:1px;
-    border-radius:8px;
+    border-radius:6px;
     overflow:hidden;
-    margin:0 auto;
   }
   .cell{
     display:flex;align-items:center;justify-content:center;
@@ -129,15 +142,15 @@
     font-weight:700;
     user-select:none;
     -webkit-tap-highlight-color:transparent;
-    width:22px;
-    height:22px;
+    width:var(--cell-size);
+    height:var(--cell-size);
     overflow:hidden;
   }
   .cell.empty{background:transparent;}
   .cell.blank{
     background:#FDFAF0;
     color:#C9BC9D;
-    font-size:11px;
+    font-size:calc(var(--cell-size) * 0.48);
     cursor:pointer;
     border:1px solid #EEE3C8;
   }
@@ -147,7 +160,7 @@
     animation:pop .28s ease;
   }
   .cell.shake{animation:shake .3s ease;}
-  /* ============================= */
+  /* =================================== */
 
   @keyframes pop{
     0%{transform:scale(0.55);}
@@ -159,7 +172,7 @@
     25%{transform:translateX(-3px);}
     75%{transform:translateX(3px);}
   }
-  .controls{display:flex;justify-content:center;margin-top:16px;}
+  .controls{display:flex;justify-content:center;margin-top:12px;flex-shrink:0;}
   .reset-btn{
     border:none;
     background:transparent;
@@ -173,12 +186,13 @@
   }
   .credit{
     text-align:center;
-    margin-top:18px;
+    margin-top:14px;
     font-family:'Quicksand', sans-serif;
     font-weight:600;
     font-size:13px;
     color:var(--ink-soft);
     letter-spacing:0.2px;
+    flex-shrink:0;
   }
   .overlay{
     position:fixed;inset:0;
@@ -236,7 +250,7 @@
       <div class="progress-label" id="progressLabel">0%</div>
     </div>
     <div class="palette" id="palette"></div>
-    <div class="grid-shell">
+    <div class="grid-shell" id="gridShell">
       <div class="grid" id="grid"></div>
     </div>
     <div class="controls">
@@ -303,22 +317,9 @@ const WALNUT_GRID = [
     [0,0,0,0,0,0,0,0,0,0,8,11,11,11,11,9,10,12,13,14,12,12,13,13,14,16,14,13,10,10,10,9,8,9,7,0,0,0,0,0,0,0,0,0,0,0]
 ];
 const WALNUT_PALETTE = {
-    1:'#4F2E16',
-    2:'#452210',
-    3:'#2B1F16',
-    4:'#140C08',
-    5:'#C07888',
-    6:'#8B545A',
-    7:'#DECABD',
-    8:'#D2B199',
-    9:'#C8A284',
-    10:'#C3936A',
-    11:'#AB917E',
-    12:'#AB805C',
-    13:'#A57248',
-    14:'#906D51',
-    15:'#845938',
-    16:'#664128'
+    1:'#4F2E16',2:'#452210',3:'#2B1F16',4:'#140C08',5:'#C07888',6:'#8B545A',
+    7:'#DECABD',8:'#D2B199',9:'#C8A284',10:'#C3936A',11:'#AB917E',12:'#AB805C',
+    13:'#A57248',14:'#906D51',15:'#845938',16:'#664128'
 };
 const ABBYNORMAN_GRID = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -365,20 +366,9 @@ const ABBYNORMAN_GRID = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,7,9,11,11,12,13,14,14,13,14,14,13,12,11,11,6,2,2,1,5,6,5,5,4,4,4,6,0,0,0,0,0,0,0,0,0]
 ];
 const ABBYNORMAN_PALETTE = {
-    1:'#F1EFE6',
-    2:'#E4E0D8',
-    3:'#D9D6CC',
-    4:'#CFCBC0',
-    5:'#C3BEB2',
-    6:'#B3AC9E',
-    7:'#AB9983',
-    8:'#96928B',
-    9:'#8C8071',
-    10:'#797875',
-    11:'#6B645C',
-    12:'#554D44',
-    13:'#3F3C39',
-    14:'#1A1917'
+    1:'#F1EFE6',2:'#E4E0D8',3:'#D9D6CC',4:'#CFCBC0',5:'#C3BEB2',6:'#B3AC9E',
+    7:'#AB9983',8:'#96928B',9:'#8C8071',10:'#797875',11:'#6B645C',12:'#554D44',
+    13:'#3F3C39',14:'#1A1917'
 };
 const CLARK_GRID = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -419,18 +409,8 @@ const CLARK_GRID = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,3,3,3,3,3,3,1,0,0,0,0,0,0,0,0,0,0]
 ];
 const CLARK_PALETTE = {
-    1:'#F1E9E0',
-    2:'#EDE0D3',
-    3:'#E9D6C3',
-    4:'#E5CAAF',
-    5:'#DCC5B0',
-    6:'#D8B89A',
-    7:'#CFA882',
-    8:'#C3A384',
-    9:'#BD946C',
-    10:'#AD7F55',
-    11:'#875C38',
-    12:'#2F241E'
+    1:'#F1E9E0',2:'#EDE0D3',3:'#E9D6C3',4:'#E5CAAF',5:'#DCC5B0',6:'#D8B89A',
+    7:'#CFA882',8:'#C3A384',9:'#BD946C',10:'#AD7F55',11:'#875C38',12:'#2F241E'
 };
 const RAVENDOG_GRID = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -477,22 +457,9 @@ const RAVENDOG_GRID = [
     [0,0,0,0,0,0,0,0,0,0,0,8,3,14,14,16,16,9,8,8,8,8,8,0,8,8,8,9,11,11,10,10,11,9,0,0,0,0,0,0,0,0]
 ];
 const RAVENDOG_PALETTE = {
-    1:'#F3F7A4',
-    2:'#CAD279',
-    3:'#777B46',
-    4:'#658EAB',
-    5:'#364754',
-    6:'#876566',
-    7:'#362927',
-    8:'#AEAAA9',
-    9:'#757476',
-    10:'#5C5C5E',
-    11:'#49494A',
-    12:'#363535',
-    13:'#262524',
-    14:'#1E1D1B',
-    15:'#181816',
-    16:'#100F0E'
+    1:'#F3F7A4',2:'#CAD279',3:'#777B46',4:'#658EAB',5:'#364754',6:'#876566',
+    7:'#362927',8:'#AEAAA9',9:'#757476',10:'#5C5C5E',11:'#49494A',12:'#363535',
+    13:'#262524',14:'#1E1D1B',15:'#181816',16:'#100F0E'
 };
 const JACK_GRID = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -549,24 +516,9 @@ const JACK_GRID = [
     [7,6,6,6,5,5,5,5,6,6,5,4,5,7,8,8,8,9,12,16,16,14,2,2,18,18,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 ];
 const JACK_PALETTE = {
-    1:'#4D4B4A',
-    2:'#23201F',
-    3:'#1E1716',
-    4:'#161212',
-    5:'#100E11',
-    6:'#0D0B0D',
-    7:'#0A080B',
-    8:'#070508',
-    9:'#040204',
-    10:'#D9BB96',
-    11:'#937A5F',
-    12:'#624C3A',
-    13:'#4A3222',
-    14:'#392E26',
-    15:'#2F221B',
-    16:'#BCBBBA',
-    17:'#8A8989',
-    18:'#555252'
+    1:'#4D4B4A',2:'#23201F',3:'#1E1716',4:'#161212',5:'#100E11',6:'#0D0B0D',
+    7:'#0A080B',8:'#070508',9:'#040204',10:'#D9BB96',11:'#937A5F',12:'#624C3A',
+    13:'#4A3222',14:'#392E26',15:'#2F221B',16:'#BCBBBA',17:'#8A8989',18:'#555252'
 };
 const PICTURES=[
   { id:'walnut', label:'Walnut', cols:46, rows:46, grid:WALNUT_GRID, palette:WALNUT_PALETTE,
@@ -587,16 +539,36 @@ PICTURES.forEach(p=>filledState[p.id]=new Set());
 const tabsEl=document.getElementById('tabs');
 const paletteEl=document.getElementById('palette');
 const gridEl=document.getElementById('grid');
-const gridShellEl=document.querySelector('.grid-shell');
+const gridShellEl=document.getElementById('gridShell');
 const progressFill=document.getElementById('progressFill');
 const progressLabel=document.getElementById('progressLabel');
 const overlay=document.getElementById('overlay');
 const resetBtn=document.getElementById('resetBtn');
+
 function totalPaintable(picture){
   let n=0;
   picture.grid.forEach(row=>row.forEach(v=>{if(v!==0)n++;}));
   return n;
 }
+
+function fitGrid(){
+  const picture = PICTURES[currentIdx];
+  const shell = gridShellEl;
+  // available space inside the shell (minus padding)
+  const availW = shell.clientWidth - 10;
+  const availH = shell.clientHeight - 10;
+
+  if(availW <= 0 || availH <= 0) return;
+
+  const cellFromWidth  = availW / picture.cols;
+  const cellFromHeight = availH / picture.rows;
+  // take the smaller one so the whole picture fits, then clamp
+  let size = Math.floor(Math.min(cellFromWidth, cellFromHeight));
+  size = Math.max(11, Math.min(size, 26)); // never smaller than 11px or bigger than 26px
+
+  document.documentElement.style.setProperty('--cell-size', size + 'px');
+}
+
 function renderTabs(){
   tabsEl.innerHTML='';
   PICTURES.forEach((p,i)=>{
@@ -607,6 +579,7 @@ function renderTabs(){
     tabsEl.appendChild(btn);
   });
 }
+
 function renderPalette(){
   const picture=PICTURES[currentIdx];
   paletteEl.innerHTML='';
@@ -627,6 +600,7 @@ function renderPalette(){
     paletteEl.appendChild(sw);
   });
 }
+
 function countRemaining(picture, num, filled){
   let n=0;
   picture.grid.forEach((row,r)=>row.forEach((v,c)=>{
@@ -634,12 +608,11 @@ function countRemaining(picture, num, filled){
   }));
   return n;
 }
+
 function renderGrid(){
   const picture=PICTURES[currentIdx];
   gridEl.style.setProperty('--cols',picture.cols);
   gridEl.style.setProperty('--rows',picture.rows);
-  gridShellEl.style.setProperty('--cols',picture.cols);
-  gridShellEl.style.setProperty('--rows',picture.rows);
   gridEl.innerHTML='';
   const filled=filledState[picture.id];
   picture.grid.forEach((row,r)=>{
@@ -659,7 +632,10 @@ function renderGrid(){
       gridEl.appendChild(cell);
     });
   });
+  // re-fit after the grid is built
+  requestAnimationFrame(fitGrid);
 }
+
 function handleCellClick(picture, r, c, value, cellEl){
   if(selectedNum===null || value!==selectedNum){
     cellEl.classList.remove('shake');
@@ -673,6 +649,7 @@ function handleCellClick(picture, r, c, value, cellEl){
   updateProgress();
   checkComplete(picture);
 }
+
 function updateProgress(){
   const picture=PICTURES[currentIdx];
   const total=totalPaintable(picture);
@@ -681,6 +658,7 @@ function updateProgress(){
   progressFill.style.width=pct+'%';
   progressLabel.textContent=pct+'%';
 }
+
 function checkComplete(picture){
   const total=totalPaintable(picture);
   const done=filledState[picture.id].size;
@@ -689,21 +667,30 @@ function checkComplete(picture){
     setTimeout(()=>overlay.classList.add('show'),250);
   }
 }
+
 resetBtn.onclick=()=>{
   const picture=PICTURES[currentIdx];
   filledState[picture.id]=new Set();
   selectedNum=null;
   renderAll();
 };
+
 document.getElementById('celebrateClose').onclick=()=>{
   overlay.classList.remove('show');
 };
+
 function renderAll(){
   renderTabs();
   renderPalette();
   renderGrid();
   updateProgress();
 }
+
+// keep the grid fitting when the phone rotates or the window resizes
+window.addEventListener('resize', () => {
+  requestAnimationFrame(fitGrid);
+});
+
 renderAll();
 </script>
 </body>
