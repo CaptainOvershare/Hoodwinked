@@ -44,7 +44,6 @@
     letter-spacing:0.3px;
   }
   header p{margin:0;color:var(--ink-soft);font-weight:600;font-size:14px;}
-
   .tabs{display:flex;gap:8px;justify-content:center;margin:18px 0 14px;flex-wrap:wrap;}
   .tab{
     border:none;
@@ -66,7 +65,6 @@
     transform:translateY(-2px);
   }
   .tab:active{transform:scale(0.96);}
-
   .card{
     background:var(--panel);
     border-radius:22px;
@@ -74,12 +72,10 @@
     box-shadow:0 10px 30px rgba(62,50,38,0.10);
     border:1px solid var(--line);
   }
-
   .progress-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
   .progress-track{flex:1;height:10px;border-radius:6px;background:#EFE6D2;overflow:hidden;}
   .progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--rust),var(--mustard));width:0%;transition:width .35s ease;}
   .progress-label{font-size:12px;font-weight:700;color:var(--ink-soft);white-space:nowrap;}
-
   .palette{
     display:flex;
     flex-wrap:wrap;
@@ -106,23 +102,26 @@
   .swatch.done{opacity:0.35;}
   .swatch:active{transform:scale(0.94);}
 
+  /* ===== FIXED MOBILE GRID ===== */
   .grid-shell{
     width:100%;
-    aspect-ratio: var(--cols) / var(--rows);
     background:#FAF4E6;
     border-radius:14px;
     padding:6px;
     border:1px solid var(--line);
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    max-height:min(68vh, 560px);
   }
   .grid{
     display:grid;
-    grid-template-columns:repeat(var(--cols), 1fr);
-    grid-template-rows:repeat(var(--rows), 1fr);
-    width:100%;
-    height:100%;
+    grid-template-columns:repeat(var(--cols), 22px);
+    grid-template-rows:repeat(var(--rows), 22px);
+    width:max-content;
     gap:1px;
     border-radius:8px;
     overflow:hidden;
+    margin:0 auto; /* centers when the picture is narrower than the card */
   }
   .cell{
     display:flex;align-items:center;justify-content:center;
@@ -130,15 +129,15 @@
     font-weight:700;
     user-select:none;
     -webkit-tap-highlight-color:transparent;
-    min-width:0;
-    min-height:0;
+    width:22px;
+    height:22px;
     overflow:hidden;
   }
   .cell.empty{background:transparent;}
   .cell.blank{
     background:#FDFAF0;
     color:#C9BC9D;
-    font-size:7px;
+    font-size:11px;
     cursor:pointer;
     border:1px solid #EEE3C8;
   }
@@ -148,6 +147,8 @@
     animation:pop .28s ease;
   }
   .cell.shake{animation:shake .3s ease;}
+  /* ============================= */
+
   @keyframes pop{
     0%{transform:scale(0.55);}
     60%{transform:scale(1.12);}
@@ -158,7 +159,6 @@
     25%{transform:translateX(-3px);}
     75%{transform:translateX(3px);}
   }
-
   .controls{display:flex;justify-content:center;margin-top:16px;}
   .reset-btn{
     border:none;
@@ -171,7 +171,6 @@
     cursor:pointer;
     padding:6px 10px;
   }
-
   .overlay{
     position:fixed;inset:0;
     background:rgba(62,50,38,0.55);
@@ -221,9 +220,7 @@
     <h1>Paint by Number</h1>
     <p>Tap a color, then tap the matching squares</p>
   </header>
-
   <div class="tabs" id="tabs"></div>
-
   <div class="card">
     <div class="progress-row">
       <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
@@ -238,7 +235,6 @@
     </div>
   </div>
 </div>
-
 <div class="overlay" id="overlay">
   <div class="celebrate-card">
     <div class="big"></div>
@@ -247,7 +243,6 @@
     <button id="celebrateClose">Done!</button>
   </div>
 </div>
-
 <script>
 const WALNUT_GRID = [
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -563,25 +558,22 @@ const JACK_PALETTE = {
     17:'#8A8989',
     18:'#555252'
 };
-
 const PICTURES=[
   { id:'walnut', label:'Walnut', cols:46, rows:46, grid:WALNUT_GRID, palette:WALNUT_PALETTE,
-    celebrateText:'That good pup is fully painted. Treats all around.' },
-  { id:'abbynorman', label:'Abby & Norman', cols:56, rows:42, grid:ABBYNORMAN_GRID, palette:ABBYNORMAN_PALETTE,
-    celebrateText:'Grandma\'s good dogs, fully painted. Long car ride well spent.' },
+    celebrateText:'That good boy is fully painted. Let's do it again!.' },
+  { id:'abbynorman', label:'Norman & Abby', cols:56, rows:42, grid:ABBYNORMAN_GRID, palette:ABBYNORMAN_PALETTE,
+    celebrateText:'Mema and Granddad\'s good pups, fully painted! Long car ride well spent.' },
   { id:'clark', label:'Clark', cols:48, rows:36, grid:CLARK_GRID, palette:CLARK_PALETTE,
-    celebrateText:'Clark the pup is all painted up. Good boy.' },
+    celebrateText:'Clark the puppy is all painted up! He's so cutee!' },
   { id:'ravendog', label:'Raven', cols:42, rows:42, grid:RAVENDOG_GRID, palette:RAVENDOG_PALETTE,
-    celebrateText:'Raven and the tennis ball, fully painted. Fetch complete.' },
+    celebrateText:'Raven and her tennis ball, fully painted! Fetch complete.' },
   { id:'jack', label:'Jack', cols:42, rows:52, grid:JACK_GRID, palette:JACK_PALETTE,
-    celebrateText:'Grandpa\'s good boy Jack, fully painted.' }
+    celebrateText:'Papa\'s good boy Jack, fully painted!' }
 ];
-
 let currentIdx=0;
 let selectedNum=null;
 let filledState={};
 PICTURES.forEach(p=>filledState[p.id]=new Set());
-
 const tabsEl=document.getElementById('tabs');
 const paletteEl=document.getElementById('palette');
 const gridEl=document.getElementById('grid');
@@ -590,13 +582,11 @@ const progressFill=document.getElementById('progressFill');
 const progressLabel=document.getElementById('progressLabel');
 const overlay=document.getElementById('overlay');
 const resetBtn=document.getElementById('resetBtn');
-
 function totalPaintable(picture){
   let n=0;
   picture.grid.forEach(row=>row.forEach(v=>{if(v!==0)n++;}));
   return n;
 }
-
 function renderTabs(){
   tabsEl.innerHTML='';
   PICTURES.forEach((p,i)=>{
@@ -607,7 +597,6 @@ function renderTabs(){
     tabsEl.appendChild(btn);
   });
 }
-
 function renderPalette(){
   const picture=PICTURES[currentIdx];
   paletteEl.innerHTML='';
@@ -628,7 +617,6 @@ function renderPalette(){
     paletteEl.appendChild(sw);
   });
 }
-
 function countRemaining(picture, num, filled){
   let n=0;
   picture.grid.forEach((row,r)=>row.forEach((v,c)=>{
@@ -636,7 +624,6 @@ function countRemaining(picture, num, filled){
   }));
   return n;
 }
-
 function renderGrid(){
   const picture=PICTURES[currentIdx];
   gridEl.style.setProperty('--cols',picture.cols);
@@ -663,7 +650,6 @@ function renderGrid(){
     });
   });
 }
-
 function handleCellClick(picture, r, c, value, cellEl){
   if(selectedNum===null || value!==selectedNum){
     cellEl.classList.remove('shake');
@@ -677,7 +663,6 @@ function handleCellClick(picture, r, c, value, cellEl){
   updateProgress();
   checkComplete(picture);
 }
-
 function updateProgress(){
   const picture=PICTURES[currentIdx];
   const total=totalPaintable(picture);
@@ -686,7 +671,6 @@ function updateProgress(){
   progressFill.style.width=pct+'%';
   progressLabel.textContent=pct+'%';
 }
-
 function checkComplete(picture){
   const total=totalPaintable(picture);
   const done=filledState[picture.id].size;
@@ -695,25 +679,21 @@ function checkComplete(picture){
     setTimeout(()=>overlay.classList.add('show'),250);
   }
 }
-
 resetBtn.onclick=()=>{
   const picture=PICTURES[currentIdx];
   filledState[picture.id]=new Set();
   selectedNum=null;
   renderAll();
 };
-
 document.getElementById('celebrateClose').onclick=()=>{
   overlay.classList.remove('show');
 };
-
 function renderAll(){
   renderTabs();
   renderPalette();
   renderGrid();
   updateProgress();
 }
-
 renderAll();
 </script>
 </body>
