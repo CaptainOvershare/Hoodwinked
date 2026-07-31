@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Paint by Number</title>
+<title>Paint the Pups by Number</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -295,7 +295,7 @@
   <div class="celebrate-card">
     <div class="big"></div>
     <h2>You did it!</h2>
-    <p id="celebrateText">The picture is finished. Nice work!</p>
+    <p id="celebrateText">The painting is finished! Nice work!</p>
     <button id="celebrateClose">Done!</button>
   </div>
 </div>
@@ -618,15 +618,15 @@ const JACK_PALETTE = {
 
 const PICTURES=[
   { id:'walnut', label:'Walnut', cols:46, rows:46, grid:WALNUT_GRID, palette:WALNUT_PALETTE,
-    celebrateText:'That good pup is fully painted. Treats all around.' },
+    celebrateText:'Walnut is a good boy and is fully painted!' },
   { id:'abbynorman', label:'Abby & Norman', cols:56, rows:42, grid:ABBYNORMAN_GRID, palette:ABBYNORMAN_PALETTE,
-    celebrateText:'Grandma\'s good dogs, fully painted. Long car ride well spent.' },
+    celebrateText:'Mema and Granddad\'s big puppies, fully painted!' },
   { id:'clark', label:'Clark', cols:48, rows:36, grid:CLARK_GRID, palette:CLARK_PALETTE,
-    celebrateText:'Clark the pup is all painted up. Good boy.' },
+    celebrateText:'Clark the puppy is all painted up and cutee!' },
   { id:'ravendog', label:'Raven', cols:42, rows:42, grid:RAVENDOG_GRID, palette:RAVENDOG_PALETTE,
-    celebrateText:'Raven and the tennis ball, fully painted. Fetch complete.' },
+    celebrateText:'Raven and her ball, fully painted! She will not give it back!' },
   { id:'jack', label:'Jack', cols:42, rows:52, grid:JACK_GRID, palette:JACK_PALETTE,
-    celebrateText:'Grandpa\'s good boy Jack, fully painted.' }
+    celebrateText:'Papa\'s sidekick Jack, fully painted!' }
 ];
 
 let currentIdx=0;
@@ -761,7 +761,7 @@ resetBtn.onclick=()=>{
 
 peekBtn.onclick=()=>{
   previewMode=!previewMode;
-  peekBtn.textContent=previewMode?'Back to my painting':'Peek at the finished picture';
+  peekBtn.textContent=previewMode?'Back to my painting':'Peek at the finished painting';
   renderGrid();
   renderPalette();
 };
@@ -775,7 +775,7 @@ function renderAll(){
   renderPalette();
   renderGrid();
   updateProgress();
-  peekBtn.textContent=previewMode?'Back to my painting':'Peek at the finished picture';
+  peekBtn.textContent=previewMode?'Back to my painting':'Peek at the finished painting';
 }
 
 renderAll();
