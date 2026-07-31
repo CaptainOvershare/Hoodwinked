@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paint by Number</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4EDDC;
+    --panel:#FFFDF7;
+    --ink:#3E3226;
+    --ink-soft:#8C7E68;
+    --blue:#4A7A9D;
+    --blue-deep:#2F5C7A;
+    --rust:#D97A45;
+    --mustard:#E3A73A;
+    --sage:#8FA678;
+    --line:#E5DCC4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 8% 10%, #EFE2C0 0%, transparent 38%),
+      radial-gradient(circle at 92% 88%, #E4ECE0 0%, transparent 42%);
+    font-family:'Quicksand', sans-serif;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:20px 14px 48px;
+  }
+  .wrap{width:100%;max-width:480px;}
+  header{text-align:center;margin-bottom:16px;}
+  h1{
+    font-family:'Baloo 2',sans-serif;
+    font-weight:800;
+    font-size:clamp(26px,7vw,34px);
+    margin:0 0 4px;
+    color:var(--blue-deep);
+    letter-spacing:0.3px;
+  }
+  header p{margin:0;color:var(--ink-soft);font-weight:600;font-size:14px;}
+
+  .tabs{display:flex;gap:8px;justify-content:center;margin:18px 0 14px;flex-wrap:wrap;}
+  .tab{
+    border:none;
+    background:var(--panel);
+    border:2px solid var(--line);
+    border-radius:14px;
+    padding:9px 16px;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:transform .15s ease, border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .tab.active{
+    border-color:var(--rust);
+    color:var(--rust);
+    background:#FCEFE4;
+    transform:translateY(-2px);
+  }
+  .tab:active{transform:scale(0.96);}
+
+  .card{
+    background:var(--panel);
+    border-radius:22px;
+    padding:16px;
+    box-shadow:0 10px 30px rgba(62,50,38,0.10);
+    border:1px solid var(--line);
+  }
+
+  .progress-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .progress-track{flex:1;height:10px;border-radius:6px;background:#EFE6D2;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--rust),var(--mustard));width:0%;transition:width .35s ease;}
+  .progress-label{font-size:12px;font-weight:700;color:var(--ink-soft);white-space:nowrap;}
+
+  .palette{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    justify-content:center;
+    margin-bottom:16px;
+  }
+  .swatch{
+    width:36px;height:36px;
+    border-radius:50%;
+    border:3px solid transparent;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:rgba(0,0,0,0.55);
+    cursor:pointer;
+    transition:transform .15s ease;
+  }
+  .swatch.selected{
+    border-color:var(--blue-deep);
+    transform:scale(1.14);
+  }
+  .swatch.done{opacity:0.35;}
+  .swatch:active{transform:scale(0.94);}
+
+  .grid-shell{
+    width:100%;
+    aspect-ratio: var(--cols) / var(--rows);
+    background:#FAF4E6;
+    border-radius:14px;
+    padding:6px;
+    border:1px solid var(--line);
+    container-type:inline-size;
+  }
+  .grid-shell.previewing{
+    border:2px solid var(--rust);
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(var(--cols), 1fr);
+    grid-template-rows:repeat(var(--rows), 1fr);
+    width:100%;
+    height:100%;
+    gap:1px;
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .cell{
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Quicksand', sans-serif;
+    font-weight:700;
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    min-width:0;
+    min-height:0;
+    overflow:hidden;
+  }
+  .cell.empty{background:transparent;}
+  .cell.blank{
+    background:#FDFAF0;
+    color:#C9BC9D;
+    font-size:clamp(3px, calc(100cqw / var(--cols) * 0.55), 13px);
+    cursor:pointer;
+    border:1px solid #EEE3C8;
+  }
+  .cell.blank:active{background:#F3E9D2;}
+  .cell.filled{
+    color:transparent;
+    animation:pop .28s ease;
+  }
+  .cell.shake{animation:shake .3s ease;}
+  @keyframes pop{
+    0%{transform:scale(0.55);}
+    60%{transform:scale(1.12);}
+    100%{transform:scale(1);}
+  }
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-3px);}
+    75%{transform:translateX(3px);}
+  }
+
+  .controls{display:flex;justify-content:center;gap:18px;margin-top:16px;flex-wrap:wrap;}
+  .reset-btn{
+    border:none;
+    background:transparent;
+    color:var(--ink-soft);
+    font-family:'Quicksand',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:6px 10px;
+  }
+
+  .overlay{
+    position:fixed;inset:0;
+    background:rgba(62,50,38,0.55);
+    display:none;
+    align-items:center;justify-content:center;
+    padding:24px;
+    z-index:10;
+  }
+  .overlay.show{display:flex;}
+  .celebrate-card{
+    background:var(--panel);
+    border-radius:22px;
+    padding:28px 24px;
+    text-align:center;
+    max-width:320px;
+    animation:pop .35s ease;
+    border:1px solid var(--line);
+  }
+  .celebrate-card .big{
+    width:56px;height:56px;border-radius:50%;
+    background:linear-gradient(135deg,var(--rust),var(--mustard));
+    margin:0 auto 12px;
+  }
+  .celebrate-card h2{
+    font-family:'Baloo 2',sans-serif;
+    margin:0 0 6px;
+    font-size:24px;
+    color:var(--blue-deep);
+  }
+  .celebrate-card p{margin:0 0 18px;color:var(--ink-soft);font-weight:600;font-size:14px;}
+  .celebrate-card button{
+    border:none;
+    background:var(--rust);
+    color:white;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    padding:12px 22px;
+    border-radius:14px;
+    cursor:pointer;
+  }
+
+  .credit{
+    text-align:center;
+    margin-top:20px;
+    font-family:'Quicksand', sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+
+  .qr-section{
+    text-align:center;
+    margin-top:64px;
+    padding-top:28px;
+    border-top:1px dashed var(--line);
+  }
+  .qr-section p{
+    font-family:'Baloo 2',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    color:var(--blue-deep);
+    margin:0 0 4px;
+  }
+  .qr-section span{
+    display:block;
+    font-family:'Quicksand',sans-serif;
+    font-weight:600;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+  }
+  .qr-section svg{
+    width:150px;
+    height:150px;
+    background:#FFFFFF;
+    padding:12px;
+    border-radius:14px;
+    border:1px solid var(--line);
+    box-shadow:0 6px 18px rgba(62,50,38,0.08);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Paint by Number</h1>
+    <p>Tap a color, then tap the matching squares</p>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="card">
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">0%</div>
+    </div>
+    <div class="palette" id="palette"></div>
+    <div class="grid-shell">
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="controls">
+      <button class="reset-btn" id="resetBtn">Clear this picture</button>
+      <button class="reset-btn" id="peekBtn">Peek at the finished picture</button>
+    </div>
+  </div>
+  <div class="credit">❤️ Built with love by Uncle Jon</div>
+
+  <div class="qr-section">
+    <p>Got a friend nearby?</p>
+    <span>Scan to open this page and play too</span>
+    <svg viewBox="0 0 41 41" xmlns="http://www.w3.org/2000/svg" fill="#3E3226"><rect x="0" y="0" width="7" height="1"/><rect x="9" y="0" width="3" height="1"/><rect x="14" y="0" width="1" height="1"/><rect x="16" y="0" width="2" height="1"/><rect x="19" y="0" width="1" height="1"/><rect x="21" y="0" width="1" height="1"/><rect x="24" y="0" width="1" height="1"/><rect x="28" y="0" width="5" height="1"/><rect x="34" y="0" width="7" height="1"/><rect x="0" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="8" y="1" width="1" height="1"/><rect x="10" y="1" width="1" height="1"/><rect x="12" y="1" width="4" height="1"/><rect x="17" y="1" width="1" height="1"/><rect x="19" y="1" width="2" height="1"/><rect x="23" y="1" width="2" height="1"/><rect x="26" y="1" width="1" height="1"/><rect x="30" y="1" width="1" height="1"/><rect x="34" y="1" width="1" height="1"/><rect x="40" y="1" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="3" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="8" y="2" width="4" height="1"/><rect x="13" y="2" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="25" y="2" width="3" height="1"/><rect x="29" y="2" width="1" height="1"/><rect x="32" y="2" width="1" height="1"/><rect x="34" y="2" width="1" height="1"/><rect x="36" y="2" width="3" height="1"/><rect x="40" y="2" width="1" height="1"/><rect x="0" y="3" width="1" height="1"/><rect x="2" y="3" width="3" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="11" y="3" width="1" height="1"/><rect x="14" y="3" width="2" height="1"/><rect x="17" y="3" width="3" height="1"/><rect x="21" y="3" width="1" height="1"/><rect x="27" y="3" width="1" height="1"/><rect x="31" y="3" width="2" height="1"/><rect x="34" y="3" width="1" height="1"/><rect x="36" y="3" width="3" height="1"/><rect x="40" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/><rect x="2" y="4" width="3" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="11" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="16" y="4" width="2" height="1"/><rect x="19" y="4" width="2" height="1"/><rect x="22" y="4" width="1" height="1"/><rect x="25" y="4" width="1" height="1"/><rect x="27" y="4" width="3" height="1"/><rect x="31" y="4" width="1" height="1"/><rect x="34" y="4" width="1" height="1"/><rect x="36" y="4" width="3" height="1"/><rect x="40" y="4" width="1" height="1"/><rect x="0" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="11" y="5" width="5" height="1"/><rect x="19" y="5" width="4" height="1"/><rect x="25" y="5" width="1" height="1"/><rect x="28" y="5" width="2" height="1"/><rect x="31" y="5" width="2" height="1"/><rect x="34" y="5" width="1" height="1"/><rect x="40" y="5" width="1" height="1"/><rect x="0" y="6" width="7" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="12" y="6" width="1" height="1"/><rect x="14" y="6" width="1" height="1"/><rect x="16" y="6" width="1" height="1"/><rect x="18" y="6" width="1" height="1"/><rect x="20" y="6" width="1" height="1"/><rect x="22" y="6" width="1" height="1"/><rect x="24" y="6" width="1" height="1"/><rect x="26" y="6" width="1" height="1"/><rect x="28" y="6" width="1" height="1"/><rect x="30" y="6" width="1" height="1"/><rect x="32" y="6" width="1" height="1"/><rect x="34" y="6" width="7" height="1"/><rect x="9" y="7" width="1" height="1"/><rect x="13" y="7" width="1" height="1"/><rect x="16" y="7" width="3" height="1"/><rect x="20" y="7" width="3" height="1"/><rect x="24" y="7" width="1" height="1"/><rect x="27" y="7" width="4" height="1"/><rect x="32" y="7" width="1" height="1"/><rect x="1" y="8" width="3" height="1"/><rect x="5" y="8" width="2" height="1"/><rect x="9" y="8" width="3" height="1"/><rect x="18" y="8" width="3" height="1"/><rect x="23" y="8" width="2" height="1"/><rect x="26" y="8" width="5" height="1"/><rect x="38" y="8" width="2" height="1"/><rect x="0" y="9" width="2" height="1"/><rect x="4" y="9" width="2" height="1"/><rect x="10" y="9" width="1" height="1"/><rect x="14" y="9" width="1" height="1"/><rect x="16" y="9" width="1" height="1"/><rect x="20" y="9" width="1" height="1"/><rect x="22" y="9" width="1" height="1"/><rect x="25" y="9" width="1" height="1"/><rect x="28" y="9" width="1" height="1"/><rect x="30" y="9" width="7" height="1"/><rect x="38" y="9" width="3" height="1"/><rect x="0" y="10" width="4" height="1"/><rect x="5" y="10" width="2" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="11" y="10" width="3" height="1"/><rect x="15" y="10" width="2" height="1"/><rect x="18" y="10" width="5" height="1"/><rect x="26" y="10" width="1" height="1"/><rect x="28" y="10" width="3" height="1"/><rect x="35" y="10" width="2" height="1"/><rect x="38" y="10" width="2" height="1"/><rect x="0" y="11" width="2" height="1"/><rect x="3" y="11" width="1" height="1"/><rect x="7" y="11" width="1" height="1"/><rect x="10" y="11" width="2" height="1"/><rect x="13" y="11" width="1" height="1"/><rect x="16" y="11" width="1" height="1"/><rect x="20" y="11" width="4" height="1"/><rect x="25" y="11" width="2" height="1"/><rect x="28" y="11" width="1" height="1"/><rect x="32" y="11" width="2" height="1"/><rect x="35" y="11" width="2" height="1"/><rect x="39" y="11" width="1" height="1"/><rect x="1" y="12" width="2" height="1"/><rect x="4" y="12" width="3" height="1"/><rect x="10" y="12" width="1" height="1"/><rect x="12" y="12" width="2" height="1"/><rect x="15" y="12" width="3" height="1"/><rect x="19" y="12" width="1" height="1"/><rect x="23" y="12" width="1" height="1"/><rect x="25" y="12" width="3" height="1"/><rect x="29" y="12" width="1" height="1"/><rect x="31" y="12" width="3" height="1"/><rect x="37" y="12" width="2" height="1"/><rect x="40" y="12" width="1" height="1"/><rect x="0" y="13" width="2" height="1"/><rect x="3" y="13" width="1" height="1"/><rect x="5" y="13" width="1" height="1"/><rect x="8" y="13" width="1" height="1"/><rect x="10" y="13" width="1" height="1"/><rect x="19" y="13" width="1" height="1"/><rect x="21" y="13" width="3" height="1"/><rect x="25" y="13" width="2" height="1"/><rect x="28" y="13" width="2" height="1"/><rect x="32" y="13" width="1" height="1"/><rect x="34" y="13" width="1" height="1"/><rect x="38" y="13" width="1" height="1"/><rect x="40" y="13" width="1" height="1"/><rect x="2" y="14" width="1" height="1"/><rect x="4" y="14" width="3" height="1"/><rect x="8" y="14" width="4" height="1"/><rect x="14" y="14" width="6" height="1"/><rect x="21" y="14" width="2" height="1"/><rect x="24" y="14" width="2" height="1"/><rect x="27" y="14" width="2" height="1"/><rect x="31" y="14" width="2" height="1"/><rect x="34" y="14" width="1" height="1"/><rect x="36" y="14" width="1" height="1"/><rect x="38" y="14" width="3" height="1"/><rect x="0" y="15" width="1" height="1"/><rect x="3" y="15" width="2" height="1"/><rect x="8" y="15" width="1" height="1"/><rect x="11" y="15" width="1" height="1"/><rect x="14" y="15" width="2" height="1"/><rect x="19" y="15" width="1" height="1"/><rect x="21" y="15" width="1" height="1"/><rect x="24" y="15" width="1" height="1"/><rect x="26" y="15" width="1" height="1"/><rect x="28" y="15" width="1" height="1"/><rect x="34" y="15" width="1" height="1"/><rect x="36" y="15" width="2" height="1"/><rect x="40" y="15" width="1" height="1"/><rect x="1" y="16" width="1" height="1"/><rect x="5" y="16" width="2" height="1"/><rect x="10" y="16" width="3" height="1"/><rect x="14" y="16" width="1" height="1"/><rect x="17" y="16" width="2" height="1"/><rect x="23" y="16" width="3" height="1"/><rect x="27" y="16" width="2" height="1"/><rect x="30" y="16" width="1" height="1"/><rect x="32" y="16" width="1" height="1"/><rect x="36" y="16" width="1" height="1"/><rect x="39" y="16" width="2" height="1"/><rect x="2" y="17" width="2" height="1"/><rect x="7" y="17" width="2" height="1"/><rect x="13" y="17" width="1" height="1"/><rect x="15" y="17" width="1" height="1"/><rect x="17" y="17" width="1" height="1"/><rect x="19" y="17" width="1" height="1"/><rect x="21" y="17" width="1" height="1"/><rect x="23" y="17" width="2" height="1"/><rect x="26" y="17" width="2" height="1"/><rect x="33" y="17" width="1" height="1"/><rect x="35" y="17" width="1" height="1"/><rect x="39" y="17" width="1" height="1"/><rect x="4" y="18" width="1" height="1"/><rect x="6" y="18" width="1" height="1"/><rect x="8" y="18" width="2" height="1"/><rect x="13" y="18" width="3" height="1"/><rect x="19" y="18" width="1" height="1"/><rect x="21" y="18" width="2" height="1"/><rect x="25" y="18" width="4" height="1"/><rect x="30" y="18" width="1" height="1"/><rect x="36" y="18" width="1" height="1"/><rect x="0" y="19" width="2" height="1"/><rect x="3" y="19" width="1" height="1"/><rect x="8" y="19" width="4" height="1"/><rect x="14" y="19" width="1" height="1"/><rect x="22" y="19" width="5" height="1"/><rect x="29" y="19" width="2" height="1"/><rect x="33" y="19" width="1" height="1"/><rect x="35" y="19" width="1" height="1"/><rect x="37" y="19" width="2" height="1"/><rect x="40" y="19" width="1" height="1"/><rect x="3" y="20" width="1" height="1"/><rect x="6" y="20" width="2" height="1"/><rect x="9" y="20" width="2" height="1"/><rect x="14" y="20" width="3" height="1"/><rect x="18" y="20" width="2" height="1"/><rect x="22" y="20" width="1" height="1"/><rect x="25" y="20" width="4" height="1"/><rect x="31" y="20" width="1" height="1"/><rect x="34" y="20" width="3" height="1"/><rect x="38" y="20" width="1" height="1"/><rect x="40" y="20" width="1" height="1"/><rect x="0" y="21" width="3" height="1"/><rect x="4" y="21" width="2" height="1"/><rect x="7" y="21" width="3" height="1"/><rect x="11" y="21" width="2" height="1"/><rect x="14" y="21" width="4" height="1"/><rect x="21" y="21" width="1" height="1"/><rect x="23" y="21" width="1" height="1"/><rect x="25" y="21" width="1" height="1"/><rect x="31" y="21" width="7" height="1"/><rect x="39" y="21" width="2" height="1"/><rect x="1" y="22" width="1" height="1"/><rect x="3" y="22" width="2" height="1"/><rect x="6" y="22" width="1" height="1"/><rect x="9" y="22" width="1" height="1"/><rect x="11" y="22" width="2" height="1"/><rect x="14" y="22" width="2" height="1"/><rect x="18" y="22" width="3" height="1"/><rect x="23" y="22" width="1" height="1"/><rect x="25" y="22" width="1" height="1"/><rect x="29" y="22" width="1" height="1"/><rect x="34" y="22" width="1" height="1"/><rect x="36" y="22" width="1" height="1"/><rect x="38" y="22" width="2" height="1"/><rect x="1" y="23" width="1" height="1"/><rect x="3" y="23" width="3" height="1"/><rect x="12" y="23" width="1" height="1"/><rect x="15" y="23" width="1" height="1"/><rect x="18" y="23" width="5" height="1"/><rect x="25" y="23" width="1" height="1"/><rect x="27" y="23" width="2" height="1"/><rect x="30" y="23" width="1" height="1"/><rect x="32" y="23" width="2" height="1"/><rect x="35" y="23" width="1" height="1"/><rect x="0" y="24" width="1" height="1"/><rect x="2" y="24" width="1" height="1"/><rect x="6" y="24" width="4" height="1"/><rect x="12" y="24" width="1" height="1"/><rect x="14" y="24" width="5" height="1"/><rect x="22" y="24" width="6" height="1"/><rect x="29" y="24" width="1" height="1"/><rect x="38" y="24" width="1" height="1"/><rect x="40" y="24" width="1" height="1"/><rect x="1" y="25" width="2" height="1"/><rect x="5" y="25" width="1" height="1"/><rect x="7" y="25" width="2" height="1"/><rect x="11" y="25" width="4" height="1"/><rect x="17" y="25" width="1" height="1"/><rect x="21" y="25" width="2" height="1"/><rect x="24" y="25" width="5" height="1"/><rect x="30" y="25" width="3" height="1"/><rect x="34" y="25" width="1" height="1"/><rect x="37" y="25" width="2" height="1"/><rect x="40" y="25" width="1" height="1"/><rect x="2" y="26" width="2" height="1"/><rect x="6" y="26" width="2" height="1"/><rect x="13" y="26" width="2" height="1"/><rect x="16" y="26" width="4" height="1"/><rect x="21" y="26" width="2" height="1"/><rect x="26" y="26" width="1" height="1"/><rect x="28" y="26" width="1" height="1"/><rect x="31" y="26" width="3" height="1"/><rect x="35" y="26" width="1" height="1"/><rect x="37" y="26" width="1" height="1"/><rect x="40" y="26" width="1" height="1"/><rect x="0" y="27" width="2" height="1"/><rect x="8" y="27" width="1" height="1"/><rect x="13" y="27" width="1" height="1"/><rect x="19" y="27" width="5" height="1"/><rect x="26" y="27" width="3" height="1"/><rect x="30" y="27" width="3" height="1"/><rect x="34" y="27" width="1" height="1"/><rect x="37" y="27" width="1" height="1"/><rect x="40" y="27" width="1" height="1"/><rect x="0" y="28" width="1" height="1"/><rect x="2" y="28" width="1" height="1"/><rect x="4" y="28" width="1" height="1"/><rect x="6" y="28" width="2" height="1"/><rect x="10" y="28" width="7" height="1"/><rect x="18" y="28" width="1" height="1"/><rect x="23" y="28" width="1" height="1"/><rect x="25" y="28" width="2" height="1"/><rect x="28" y="28" width="1" height="1"/><rect x="30" y="28" width="3" height="1"/><rect x="36" y="28" width="2" height="1"/><rect x="3" y="29" width="1" height="1"/><rect x="7" y="29" width="3" height="1"/><rect x="11" y="29" width="1" height="1"/><rect x="14" y="29" width="1" height="1"/><rect x="17" y="29" width="1" height="1"/><rect x="20" y="29" width="1" height="1"/><rect x="22" y="29" width="1" height="1"/><rect x="24" y="29" width="2" height="1"/><rect x="28" y="29" width="1" height="1"/><rect x="30" y="29" width="3" height="1"/><rect x="34" y="29" width="2" height="1"/><rect x="37" y="29" width="2" height="1"/><rect x="0" y="30" width="1" height="1"/><rect x="4" y="30" width="1" height="1"/><rect x="6" y="30" width="2" height="1"/><rect x="9" y="30" width="3" height="1"/><rect x="13" y="30" width="1" height="1"/><rect x="15" y="30" width="1" height="1"/><rect x="17" y="30" width="5" height="1"/><rect x="23" y="30" width="2" height="1"/><rect x="26" y="30" width="6" height="1"/><rect x="33" y="30" width="4" height="1"/><rect x="2" y="31" width="2" height="1"/><rect x="7" y="31" width="3" height="1"/><rect x="11" y="31" width="1" height="1"/><rect x="15" y="31" width="2" height="1"/><rect x="21" y="31" width="1" height="1"/><rect x="24" y="31" width="1" height="1"/><rect x="26" y="31" width="1" height="1"/><rect x="29" y="31" width="3" height="1"/><rect x="34" y="31" width="2" height="1"/><rect x="37" y="31" width="4" height="1"/><rect x="1" y="32" width="1" height="1"/><rect x="4" y="32" width="1" height="1"/><rect x="6" y="32" width="1" height="1"/><rect x="8" y="32" width="2" height="1"/><rect x="14" y="32" width="2" height="1"/><rect x="17" y="32" width="5" height="1"/><rect x="23" y="32" width="1" height="1"/><rect x="26" y="32" width="1" height="1"/><rect x="28" y="32" width="3" height="1"/><rect x="32" y="32" width="8" height="1"/><rect x="8" y="33" width="1" height="1"/><rect x="10" y="33" width="3" height="1"/><rect x="14" y="33" width="2" height="1"/><rect x="19" y="33" width="1" height="1"/><rect x="23" y="33" width="1" height="1"/><rect x="28" y="33" width="2" height="1"/><rect x="32" y="33" width="1" height="1"/><rect x="36" y="33" width="2" height="1"/><rect x="40" y="33" width="1" height="1"/><rect x="0" y="34" width="7" height="1"/><rect x="9" y="34" width="4" height="1"/><rect x="15" y="34" width="4" height="1"/><rect x="20" y="34" width="2" height="1"/><rect x="23" y="34" width="2" height="1"/><rect x="26" y="34" width="1" height="1"/><rect x="30" y="34" width="3" height="1"/><rect x="34" y="34" width="1" height="1"/><rect x="36" y="34" width="2" height="1"/><rect x="39" y="34" width="1" height="1"/><rect x="0" y="35" width="1" height="1"/><rect x="6" y="35" width="1" height="1"/><rect x="8" y="35" width="2" height="1"/><rect x="12" y="35" width="2" height="1"/><rect x="15" y="35" width="2" height="1"/><rect x="20" y="35" width="2" height="1"/><rect x="25" y="35" width="2" height="1"/><rect x="29" y="35" width="1" height="1"/><rect x="32" y="35" width="1" height="1"/><rect x="36" y="35" width="1" height="1"/><rect x="39" y="35" width="2" height="1"/><rect x="0" y="36" width="1" height="1"/><rect x="2" y="36" width="3" height="1"/><rect x="6" y="36" width="1" height="1"/><rect x="11" y="36" width="7" height="1"/><rect x="19" y="36" width="2" height="1"/><rect x="22" y="36" width="3" height="1"/><rect x="27" y="36" width="1" height="1"/><rect x="32" y="36" width="5" height="1"/><rect x="38" y="36" width="1" height="1"/><rect x="0" y="37" width="1" height="1"/><rect x="2" y="37" width="3" height="1"/><rect x="6" y="37" width="1" height="1"/><rect x="8" y="37" width="1" height="1"/><rect x="10" y="37" width="5" height="1"/><rect x="17" y="37" width="3" height="1"/><rect x="21" y="37" width="1" height="1"/><rect x="23" y="37" width="3" height="1"/><rect x="27" y="37" width="3" height="1"/><rect x="31" y="37" width="2" height="1"/><rect x="36" y="37" width="2" height="1"/><rect x="39" y="37" width="2" height="1"/><rect x="0" y="38" width="1" height="1"/><rect x="2" y="38" width="3" height="1"/><rect x="6" y="38" width="1" height="1"/><rect x="8" y="38" width="1" height="1"/><rect x="10" y="38" width="2" height="1"/><rect x="13" y="38" width="6" height="1"/><rect x="24" y="38" width="1" height="1"/><rect x="26" y="38" width="1" height="1"/><rect x="35" y="38" width="1" height="1"/><rect x="38" y="38" width="1" height="1"/><rect x="40" y="38" width="1" height="1"/><rect x="0" y="39" width="1" height="1"/><rect x="6" y="39" width="1" height="1"/><rect x="8" y="39" width="3" height="1"/><rect x="12" y="39" width="7" height="1"/><rect x="20" y="39" width="1" height="1"/><rect x="23" y="39" width="1" height="1"/><rect x="26" y="39" width="3" height="1"/><rect x="30" y="39" width="1" height="1"/><rect x="32" y="39" width="1" height="1"/><rect x="34" y="39" width="1" height="1"/><rect x="36" y="39" width="2" height="1"/><rect x="39" y="39" width="1" height="1"/><rect x="0" y="40" width="7" height="1"/><rect x="9" y="40" width="1" height="1"/><rect x="12" y="40" width="4" height="1"/><rect x="17" y="40" width="2" height="1"/><rect x="20" y="40" width="3" height="1"/><rect x="24" y="40" width="2" height="1"/><rect x="28" y="40" width="1" height="1"/><rect x="30" y="40" width="3" height="1"/><rect x="34" y="40" width="1" height="1"/><rect x="39" y="40" width="1" height="1"/></svg>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="celebrate-card">
+    <div class="big"></div>
+    <h2>You did it!</h2>
+    <p id="celebrateText">The picture is finished. Nice work!</p>
+    <button id="celebrateClose">Done!</button>
+  </div>
+</div>
+
+<script>
+const WALNUT_GRID = [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,15,9,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,15,13,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,15,12,16,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,16,16,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,13,12,12,15,10,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,2,16,1,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11,13,10,14,15,13,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,11,16,15,15,16,9,0,0,0,0,0,0,0,0,0,0,0,0,9,15,10,12,15,15,13,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,12,15,15,15,15,16,10,0,0,0,0,0,0,0,0,0,0,8,16,12,10,14,16,15,13,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,12,15,15,15,15,13,16,12,0,0,0,0,0,0,0,0,0,16,13,10,12,16,16,15,13,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,13,15,16,16,15,14,15,16,12,0,0,0,0,0,0,0,14,1,13,12,13,16,16,14,13,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,13,15,16,16,15,14,13,15,1,11,0,0,0,0,0,0,1,1,15,16,16,16,15,15,10,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,12,15,15,16,16,16,15,16,2,1,7,0,0,0,0,7,12,15,1,16,1,16,15,13,12,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,8,13,13,15,1,3,2,2,16,10,7,0,0,7,7,7,7,8,12,16,1,16,15,16,15,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,13,12,15,1,3,3,16,8,7,7,7,7,7,9,7,7,7,7,11,16,16,16,15,12,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,16,13,15,1,2,3,11,8,7,7,7,8,7,8,7,7,7,7,7,8,14,15,10,9,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,14,16,15,16,1,14,8,8,7,7,7,8,8,7,7,7,7,7,9,8,8,13,13,7,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,9,13,15,15,11,8,8,8,8,7,7,7,8,8,7,7,8,7,8,8,7,12,13,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,15,15,12,8,9,9,8,8,7,7,7,8,7,7,11,14,7,7,8,8,10,10,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,11,16,11,8,11,9,7,8,15,8,7,7,7,8,12,16,16,14,9,9,9,7,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,15,14,11,11,8,11,16,16,14,7,7,7,7,14,3,1,3,15,9,9,7,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,9,15,12,14,15,4,3,4,16,8,8,7,7,11,16,16,15,9,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,15,15,14,16,3,16,16,14,11,8,7,8,8,11,11,10,9,8,9,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,15,14,11,11,14,14,11,11,11,8,8,8,7,8,8,10,10,8,8,7,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,14,14,11,12,16,14,11,11,11,11,11,11,8,8,8,9,9,8,8,7,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,7,11,12,11,11,15,14,11,11,11,11,11,11,11,8,8,8,8,8,8,7,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,7,9,12,12,11,11,12,11,11,11,14,14,14,16,14,9,8,8,9,9,8,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,8,9,14,14,12,9,11,14,14,16,4,3,3,3,16,9,9,10,9,8,8,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,9,11,12,14,15,14,14,14,11,16,4,4,4,4,16,11,11,12,8,8,8,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,11,12,14,14,14,3,16,11,14,16,3,4,4,3,16,12,14,15,8,9,7,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,9,12,12,14,14,2,16,14,15,16,16,3,3,16,15,12,16,10,9,10,7,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,7,12,11,14,15,16,4,1,16,16,16,1,2,16,12,2,16,9,9,9,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,14,12,12,14,14,2,4,3,3,2,1,2,15,14,4,12,10,9,8,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,14,11,11,12,16,3,4,4,1,16,16,13,14,16,10,10,9,7,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,7,11,15,9,8,11,15,16,3,4,6,6,6,5,12,12,10,9,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,7,8,15,14,9,9,14,15,16,4,6,5,6,5,6,12,9,9,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,7,8,9,16,1,12,9,12,15,15,1,6,5,5,5,14,10,8,9,8,7,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,7,8,9,12,16,4,16,10,12,15,16,16,16,5,5,5,10,10,9,13,10,7,7,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,8,9,12,13,15,3,3,15,13,12,13,15,15,15,13,13,12,10,12,15,12,8,7,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,7,8,9,10,12,14,1,3,2,15,12,12,13,15,13,13,12,12,13,15,12,12,9,8,7,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,7,9,10,11,11,14,16,3,4,3,16,15,14,13,15,13,13,13,15,15,12,12,10,8,7,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,7,9,9,11,11,12,14,14,1,4,3,4,1,2,1,2,16,13,15,15,12,10,10,8,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,7,11,9,11,12,12,12,12,14,16,1,2,2,1,1,4,15,13,13,13,12,10,10,8,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,7,11,11,11,12,12,12,14,16,15,15,15,15,15,15,1,15,13,15,12,10,10,9,8,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,8,11,11,11,9,11,12,15,15,14,15,14,14,14,15,15,12,12,13,10,10,9,8,8,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,8,11,11,11,11,9,10,12,13,14,12,12,13,13,14,16,14,13,10,10,10,9,8,9,7,0,0,0,0,0,0,0,0,0,0,0]
+];
+const WALNUT_PALETTE = {
+    1:'#4F2E16',
+    2:'#452210',
+    3:'#2B1F16',
+    4:'#140C08',
+    5:'#C07888',
+    6:'#8B545A',
+    7:'#DECABD',
+    8:'#D2B199',
+    9:'#C8A284',
+    10:'#C3936A',
+    11:'#AB917E',
+    12:'#AB805C',
+    13:'#A57248',
+    14:'#906D51',
+    15:'#845938',
+    16:'#664128'
+};
+const ABBYNORMAN_GRID = [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,4,5,5,3,4,4,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,6,14,13,8,6,8,8,8,11,8,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,10,14,13,11,6,8,10,10,13,13,10,10,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,10,14,14,13,11,8,10,10,11,14,13,12,10,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,13,14,14,13,11,10,11,10,13,13,11,11,11,10,12,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,11,14,14,14,13,11,11,11,14,14,13,12,12,10,13,14,13,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,12,14,11,10,10,11,10,9,12,14,14,14,12,10,13,14,13,13,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,13,10,6,9,10,10,11,8,8,12,12,10,10,10,14,14,12,13,13,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,11,9,10,10,10,10,10,10,8,10,10,11,8,11,14,14,14,14,13,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,6,14,12,11,11,10,10,10,11,8,9,10,10,10,14,13,8,6,5,5,2,1,0,1,2,3,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,14,14,14,12,12,14,13,10,11,10,11,11,10,12,12,5,4,3,3,4,1,1,0,0,1,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,8,14,14,14,13,11,13,14,11,10,10,12,12,10,8,5,5,4,3,3,4,2,0,0,0,1,2,2,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,10,13,13,14,13,14,10,10,10,10,11,11,11,7,7,6,5,2,2,2,3,2,0,1,1,3,3,3,1,1,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,11,13,13,13,13,13,10,8,10,12,12,9,7,9,5,3,2,1,1,3,3,1,3,3,4,2,2,2,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,10,12,10,12,11,10,10,8,11,13,13,9,9,8,5,4,3,2,1,2,3,4,5,5,4,2,3,3,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,10,10,10,10,10,8,9,10,12,14,11,7,11,11,8,6,5,3,2,3,2,4,5,6,6,4,4,6,4,1,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,10,11,10,10,13,10,9,11,13,14,9,7,11,14,13,9,6,5,3,2,1,3,5,6,9,8,6,10,6,1,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,8,13,10,12,14,14,12,13,14,12,7,11,13,14,14,11,7,6,5,4,2,2,5,6,9,10,12,12,6,1,0,0,1,1,2,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,13,11,14,12,13,14,14,14,7,9,14,14,14,14,11,7,7,5,5,2,2,5,6,10,10,11,12,11,4,1,0,1,2,3,1,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,8,13,6,6,11,13,11,11,7,12,14,14,14,14,9,7,7,7,5,0,1,5,6,10,11,11,13,14,12,1,0,1,3,3,1,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,7,12,13,14,14,11,7,8,8,8,4,1,1,4,6,8,11,12,11,12,14,5,0,2,3,3,1,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,11,9,11,11,12,13,10,8,8,6,5,1,1,1,1,5,5,9,12,12,11,11,7,1,3,5,2,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,9,7,11,11,12,12,10,8,5,3,2,2,1,0,0,1,6,8,9,10,8,5,5,1,4,7,4,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,11,9,7,11,11,12,12,9,5,5,5,3,3,2,0,0,0,3,9,7,5,4,2,3,2,3,6,5,1,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,11,7,7,9,11,13,12,8,6,3,2,4,3,2,0,0,0,0,6,9,5,3,1,1,4,5,7,7,4,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,12,10,7,7,9,11,13,11,9,6,4,4,3,2,2,1,0,0,0,2,8,5,2,0,1,4,7,7,7,4,5,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,7,12,11,9,7,9,12,13,9,9,8,6,5,3,3,4,3,1,0,0,0,6,6,1,0,0,4,9,9,9,3,5,3,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,9,12,12,9,7,11,13,11,7,8,8,8,5,5,5,6,5,3,0,0,0,5,6,1,0,0,5,12,9,9,5,2,5,2,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,9,13,13,9,7,11,12,7,6,6,8,6,6,6,6,8,8,8,3,0,0,3,8,1,0,0,7,11,9,9,7,3,4,4,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,6,10,13,14,11,6,10,9,6,8,9,6,6,6,8,10,12,11,11,8,1,0,0,6,2,0,1,11,9,9,11,7,4,3,4,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,4,13,14,12,7,9,7,7,11,12,11,10,8,8,10,11,10,12,12,6,1,0,4,1,0,4,12,9,9,10,6,5,1,4,2,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,13,14,13,9,7,7,9,13,14,14,11,11,10,9,8,8,11,12,11,3,0,3,0,0,8,13,11,11,8,4,6,0,2,2,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,14,14,12,7,7,11,14,14,14,13,12,11,11,10,9,10,11,12,6,2,3,0,0,7,12,13,12,7,3,5,2,0,1,1,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,10,14,14,13,7,8,13,14,14,14,13,12,10,10,10,8,10,11,12,10,2,2,0,1,7,9,9,13,6,2,4,3,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,9,12,11,7,10,13,14,14,14,13,12,10,11,10,8,6,10,12,11,2,2,1,2,7,6,3,8,8,3,4,1,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,9,9,8,12,13,14,14,14,13,12,11,12,12,10,6,8,10,11,2,2,3,4,6,5,5,3,3,4,4,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,7,9,9,12,13,14,14,14,14,13,12,13,13,12,13,13,12,11,3,2,4,6,6,5,5,4,3,4,4,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,7,7,11,12,13,14,14,14,14,14,12,14,13,14,14,14,14,11,2,2,5,7,7,5,5,3,3,5,4,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,7,7,10,11,12,14,14,14,14,14,13,14,11,10,14,13,12,9,2,2,5,7,5,5,5,3,3,5,4,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,7,9,11,12,13,14,14,14,13,13,14,11,8,8,8,10,5,2,2,4,6,5,5,4,3,3,5,3,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,7,9,11,11,12,13,14,14,13,14,14,13,12,11,11,6,2,2,1,5,6,5,5,4,4,4,6,0,0,0,0,0,0,0,0,0]
+];
+const ABBYNORMAN_PALETTE = {
+    1:'#F1EFE6',
+    2:'#E4E0D8',
+    3:'#D9D6CC',
+    4:'#CFCBC0',
+    5:'#C3BEB2',
+    6:'#B3AC9E',
+    7:'#AB9983',
+    8:'#96928B',
+    9:'#8C8071',
+    10:'#797875',
+    11:'#6B645C',
+    12:'#554D44',
+    13:'#3F3C39',
+    14:'#1A1917'
+};
+const CLARK_GRID = [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,5,7,8,8,8,6,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,2,4,5,5,6,6,7,8,9,10,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,4,4,3,3,3,4,5,6,6,7,9,10,9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,6,6,3,2,3,3,4,4,3,4,6,7,10,10,8,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,3,7,5,2,2,3,3,4,4,3,4,6,7,9,9,9,10,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,6,7,4,2,6,4,3,6,4,3,4,7,7,7,9,9,10,10,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,7,6,3,9,12,7,3,6,3,3,6,9,9,9,7,9,11,11,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,6,7,3,8,12,8,4,6,4,7,9,10,9,10,9,9,11,11,10,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,3,7,3,2,7,4,6,6,4,10,12,12,11,10,9,9,11,11,10,10,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,7,5,2,4,6,9,7,7,10,12,12,11,11,9,6,11,11,10,10,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,9,6,2,4,7,9,9,10,10,10,10,10,9,10,6,11,11,11,10,9,6,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,9,6,1,3,6,9,10,10,11,11,10,10,10,10,9,11,11,11,11,11,10,10,9,6,2,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,5,1,5,11,11,9,10,10,11,11,10,10,11,11,10,11,11,11,11,10,8,8,9,10,9,6,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,1,11,12,12,12,11,9,11,11,10,11,12,10,11,11,11,11,10,9,9,8,9,9,9,9,9,3,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,1,11,12,12,12,11,9,10,10,10,10,11,10,12,11,11,10,9,10,10,10,10,9,9,9,9,10,5,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,2,5,11,12,10,8,10,10,10,8,8,10,11,11,10,7,6,6,6,9,10,11,11,10,9,8,9,10,5,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,6,3,6,10,5,6,9,9,9,8,7,10,10,7,6,3,2,2,2,3,6,10,11,11,10,9,8,10,10,2,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,6,9,10,8,5,5,5,8,9,3,5,7,7,6,4,3,2,2,1,2,2,2,6,10,11,11,10,8,8,10,8,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,2,5,9,10,11,1,5,11,11,12,11,9,7,7,4,3,1,1,2,2,2,2,2,4,7,10,10,10,9,9,9,9,3,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,1,4,7,10,11,2,3,12,12,12,12,11,7,6,3,1,1,1,1,1,1,2,2,3,6,9,10,10,9,7,8,10,6,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,2,4,9,10,11,9,8,12,11,11,12,11,9,4,2,1,1,1,1,1,1,1,2,2,5,7,9,9,9,8,8,9,9,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,2,5,8,11,11,11,10,10,9,8,8,6,8,3,2,2,1,1,1,1,1,1,2,2,4,7,9,9,9,8,10,9,9,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,2,5,10,11,6,6,10,10,10,10,9,8,6,2,2,3,2,2,1,1,1,1,2,2,2,5,9,9,7,6,9,10,10,2,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,3,4,10,6,3,6,7,9,9,7,9,9,7,2,3,3,3,2,1,1,1,1,1,1,2,3,7,10,9,7,9,11,10,3,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,3,8,11,3,3,6,6,7,7,7,7,7,6,3,3,4,3,2,2,2,1,0,1,1,2,2,6,9,10,9,10,11,11,3,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,1,3,8,10,2,3,5,6,6,6,4,4,6,6,3,3,4,3,3,3,2,1,1,1,2,2,3,3,7,9,10,10,10,11,5,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,5,11,10,2,3,4,4,5,8,8,8,6,8,4,3,4,4,3,3,3,2,2,1,1,2,3,3,5,7,8,10,10,11,5,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,8,8,2,4,6,8,8,9,11,12,12,10,4,3,6,4,4,4,4,2,2,2,2,2,3,3,6,8,7,7,10,11,5,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,6,5,3,11,11,10,9,8,10,11,11,7,3,6,6,4,5,6,3,2,2,3,3,3,3,4,9,9,6,8,10,5,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,2,9,6,11,11,6,9,6,6,7,10,11,10,10,11,10,10,11,8,5,3,3,3,4,5,5,6,6,6,9,9,1,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,5,8,10,11,9,9,7,6,6,6,6,8,9,10,11,11,11,11,11,9,6,8,7,6,6,5,5,6,9,8,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,6,8,9,7,6,6,6,6,6,4,4,6,6,7,8,8,7,6,4,3,4,5,5,7,9,2,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,3,4,6,6,6,6,5,4,4,4,4,4,3,3,3,4,6,7,7,2,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,4,5,6,6,6,6,5,5,5,5,6,6,6,4,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,3,3,3,3,3,3,1,0,0,0,0,0,0,0,0,0,0]
+];
+const CLARK_PALETTE = {
+    1:'#F1E9E0',
+    2:'#EDE0D3',
+    3:'#E9D6C3',
+    4:'#E5CAAF',
+    5:'#DCC5B0',
+    6:'#D8B89A',
+    7:'#CFA882',
+    8:'#C3A384',
+    9:'#BD946C',
+    10:'#AD7F55',
+    11:'#875C38',
+    12:'#2F241E'
+};
+const RAVENDOG_GRID = [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,8,8,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,8,9,8,8,9,9,9,11,12,10,9,9,10,12,11,13,15,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,9,13,13,13,13,13,12,11,9,10,10,9,9,11,11,11,9,12,3,9,8,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,9,16,16,14,13,14,13,12,10,9,10,11,10,10,10,11,10,9,9,12,16,12,10,8,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,8,11,15,16,15,15,15,15,12,10,10,11,11,12,12,13,12,11,10,10,9,9,14,15,13,11,8,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,8,12,16,14,16,16,15,14,14,12,11,11,10,11,12,12,12,12,13,15,11,9,9,8,10,16,13,13,8,0,0,0,0,0,0,0,0,0],
+    [0,0,0,11,13,13,15,15,16,16,15,16,15,12,14,16,12,11,12,12,12,13,15,14,13,11,9,9,9,14,14,12,10,0,0,0,0,0,0,0,0,0],
+    [0,0,12,13,12,16,15,16,16,15,16,15,15,16,16,16,16,12,11,12,12,13,16,15,13,12,11,9,9,12,16,12,11,0,0,0,0,0,0,0,0,0],
+    [0,0,15,13,13,15,13,16,16,15,15,14,14,13,16,16,16,14,11,12,11,12,15,12,11,12,12,9,9,12,15,13,10,0,0,0,0,0,0,0,0,0],
+    [0,0,12,13,13,13,14,16,16,15,15,15,15,13,14,14,16,12,10,11,11,11,12,10,9,9,6,9,9,11,9,9,11,0,0,0,0,0,0,0,0,0],
+    [0,0,11,14,13,13,15,16,16,15,16,7,7,11,14,14,15,11,10,10,10,10,12,9,9,6,9,9,10,10,8,0,11,0,0,0,0,0,0,0,0,0],
+    [0,0,9,15,12,16,11,9,16,15,15,7,7,7,14,16,14,12,10,10,10,9,12,10,9,9,8,10,10,10,9,0,9,0,0,0,0,0,0,0,0,0],
+    [0,0,0,12,13,16,8,0,16,14,16,14,13,14,13,16,14,13,11,11,11,9,10,13,11,9,9,10,9,10,9,0,9,8,0,0,0,0,0,0,0,0],
+    [0,0,0,0,13,14,0,0,16,14,15,16,14,13,13,15,15,14,11,10,11,9,9,12,12,9,10,11,8,10,10,0,9,9,0,0,0,0,0,0,0,0],
+    [0,0,0,0,9,11,0,0,15,14,14,15,16,14,13,15,15,13,11,10,10,10,9,9,11,9,13,10,8,9,9,0,8,9,0,0,0,0,0,0,0,0],
+    [0,0,0,0,9,9,0,0,14,14,14,14,16,16,13,15,15,14,12,10,10,10,9,8,9,9,12,10,9,10,9,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,8,9,0,0,11,7,14,15,16,15,15,15,14,12,12,10,10,12,9,8,8,8,11,10,9,13,8,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,9,16,14,14,15,15,15,15,14,13,11,11,11,11,12,9,8,9,11,11,12,11,10,8,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,13,15,14,15,16,15,14,14,13,10,11,12,11,13,12,9,10,12,12,13,10,14,12,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,8,16,14,14,16,14,12,13,11,10,11,12,12,10,11,10,9,9,13,10,11,14,13,10,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,8,14,14,14,15,13,13,13,12,11,11,11,10,9,9,11,9,9,10,10,13,12,12,11,8,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,9,15,14,14,14,13,13,13,12,12,10,10,9,8,8,10,9,9,9,10,11,12,13,11,12,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,10,7,13,14,14,12,13,13,13,12,10,11,9,9,9,10,9,9,9,9,9,11,12,11,13,8,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,10,16,14,14,14,11,13,13,14,16,13,13,15,16,10,10,9,9,9,9,9,12,11,10,12,9,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,10,16,14,13,14,10,11,14,13,16,14,13,11,10,10,9,8,8,8,8,8,11,11,10,12,10,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,9,16,15,12,14,11,10,12,14,14,13,13,12,11,10,8,8,8,8,8,9,11,10,10,12,10,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,10,16,15,13,12,11,9,9,10,11,12,12,11,10,8,8,8,1,1,8,10,11,10,11,12,10,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,12,15,14,15,12,12,10,9,9,9,9,9,2,8,2,2,1,1,1,8,11,10,10,11,12,9,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,13,14,15,15,13,12,11,9,9,9,3,3,2,2,2,2,1,1,1,10,11,11,10,12,12,9,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,15,14,16,16,13,12,12,10,10,11,3,3,3,2,2,2,1,1,9,12,11,11,11,12,12,11,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,8,16,13,15,16,15,13,12,7,7,7,7,3,3,2,2,2,2,9,12,12,12,12,11,12,12,11,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,9,16,13,15,16,16,16,13,7,7,6,6,6,6,9,8,8,9,12,13,13,13,12,12,12,12,11,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,9,16,13,14,15,14,15,12,7,8,8,6,6,6,6,8,8,9,10,13,13,12,12,13,11,12,10,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,8,3,13,13,15,14,14,14,7,6,8,9,10,6,8,8,8,9,8,12,13,12,13,12,9,12,11,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,8,15,13,13,15,15,14,15,12,6,6,8,8,8,8,8,8,9,10,13,13,13,13,10,9,12,11,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,13,14,14,14,16,15,15,16,12,11,11,10,11,9,9,9,4,5,13,13,13,12,9,11,12,10,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,10,3,14,14,15,15,15,14,14,11,10,10,9,9,10,4,4,5,12,12,11,10,9,11,11,9,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,8,15,14,14,14,14,15,16,16,12,8,8,8,14,16,5,4,5,13,11,10,10,9,10,11,9,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,9,15,14,14,14,9,9,14,13,8,8,8,12,16,5,4,5,14,12,10,11,10,9,10,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,10,14,14,15,12,8,8,8,8,8,8,8,9,10,12,12,9,9,11,11,10,10,9,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,8,3,14,14,16,16,9,8,8,8,8,8,0,8,8,8,9,11,11,10,10,11,9,0,0,0,0,0,0,0,0]
+];
+const RAVENDOG_PALETTE = {
+    1:'#F3F7A4',
+    2:'#CAD279',
+    3:'#777B46',
+    4:'#658EAB',
+    5:'#364754',
+    6:'#876566',
+    7:'#362927',
+    8:'#AEAAA9',
+    9:'#757476',
+    10:'#5C5C5E',
+    11:'#49494A',
+    12:'#363535',
+    13:'#262524',
+    14:'#1E1D1B',
+    15:'#181816',
+    16:'#100F0E'
+};
+const JACK_GRID = [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,18,2,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,9,7,18,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,4,4,8,16,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,17,8,4,5,9,18,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,7,5,5,7,5,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,2,18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,8,5,4,4,6,9,17,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,9,9,18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,18,8,4,3,3,4,9,17,0,0,0,0,0,0,0,0],
+    [0,0,0,0,16,9,5,9,18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,4,3,3,15,4,9,18,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,9,7,7,9,17,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,8,3,3,3,15,3,9,13,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,9,8,8,8,5,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0,18,7,2,3,15,15,3,8,14,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,9,8,8,7,8,18,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,4,2,3,14,15,3,7,15,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,9,8,7,8,7,9,1,0,0,0,0,0,0,0,0,0,0,0,0,0,4,14,13,14,13,14,15,7,15,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,6,8,6,7,8,6,7,17,0,0,0,0,0,0,0,0,0,0,0,17,4,13,12,12,13,13,15,8,13,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,3,9,5,5,8,6,5,15,0,0,0,0,0,0,0,0,0,0,0,11,15,13,11,12,13,13,15,9,12,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,18,9,3,15,4,6,4,6,12,0,0,0,0,0,0,0,0,0,16,12,15,12,11,12,14,13,3,7,11,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,18,9,3,14,15,4,4,4,4,12,0,0,0,0,0,0,0,0,18,8,8,14,11,12,13,15,3,4,12,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,16,9,6,15,15,3,4,4,6,9,17,0,0,0,0,0,0,0,18,18,2,6,12,11,12,3,3,3,13,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,15,9,3,15,15,3,6,5,2,18,0,0,0,0,17,17,17,17,18,18,2,5,12,13,15,15,13,14,16,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,17,9,4,15,15,3,6,2,18,18,18,18,18,2,9,18,17,18,18,18,2,2,14,12,12,13,12,12,16,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,3,7,4,3,3,4,4,3,4,6,18,17,18,8,18,18,18,2,2,2,18,18,13,13,13,12,11,16,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,18,6,3,4,6,6,6,7,6,4,18,17,18,3,18,17,18,2,3,2,18,18,2,4,15,13,11,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,17,6,15,3,15,4,8,7,6,5,18,17,18,2,14,10,11,14,2,2,2,18,18,18,2,13,11,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,16,3,14,15,13,4,8,7,6,6,2,11,18,2,15,11,11,14,15,12,2,18,17,1,3,4,17,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,13,15,15,15,7,7,7,7,5,1,10,12,2,4,13,11,12,18,2,14,13,18,1,2,7,17,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,11,3,5,5,8,7,7,6,2,1,10,11,2,3,15,11,1,18,2,4,18,18,17,1,4,17,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,14,8,7,7,7,7,4,2,15,11,11,18,2,3,12,11,18,18,2,17,18,1,1,18,16,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,17,9,6,7,7,6,5,6,9,12,12,18,18,2,18,17,18,17,13,11,18,17,1,17,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,16,8,6,7,6,5,7,8,9,15,13,18,18,2,18,17,18,17,18,18,12,10,1,17,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,2,8,6,6,5,6,4,2,8,3,15,18,18,18,17,18,18,18,2,11,10,17,16,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,17,7,5,5,5,4,3,3,7,6,3,2,18,18,17,17,18,18,18,1,10,10,16,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,3,6,6,3,3,6,6,7,6,6,3,18,17,16,16,17,17,17,1,10,10,16,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,16,3,5,6,3,14,3,6,8,5,4,4,2,17,16,17,17,17,10,10,10,10,16,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,17,6,3,5,3,15,14,15,4,5,4,6,3,18,16,17,17,17,1,10,10,10,16,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,2,4,3,4,14,13,15,15,15,6,5,5,4,18,17,17,16,16,17,10,10,10,16,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,16,8,3,2,3,13,12,13,3,15,5,6,6,2,17,18,17,17,16,17,16,1,1,16,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,18,9,4,15,3,13,12,12,14,3,5,6,7,18,17,18,17,17,18,17,16,16,10,16,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,18,8,5,3,15,13,12,12,13,15,4,5,6,18,17,18,17,17,17,18,16,16,10,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,16,3,4,5,7,14,13,12,13,15,15,5,4,4,18,18,18,17,17,16,17,17,16,10,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,17,18,2,5,5,5,7,4,13,13,13,3,3,5,5,4,4,14,18,17,17,16,16,17,16,16,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,18,7,6,5,5,6,6,6,9,15,13,13,14,5,5,5,4,5,1,18,12,11,17,17,16,17,16,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,17,7,3,4,5,7,7,7,7,8,9,13,13,14,4,5,5,3,4,2,14,14,2,9,11,17,17,16,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,17,8,4,5,6,6,7,7,8,7,8,8,8,14,13,3,5,6,4,4,9,4,15,18,17,17,17,17,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,16,7,5,5,6,6,7,7,7,8,8,8,8,8,8,15,15,4,6,4,3,4,4,3,2,12,17,18,16,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,6,7,5,6,7,7,7,8,8,8,8,8,7,8,8,7,4,3,5,5,4,3,2,3,14,12,11,18,16,0,0,0,0,0,0,0,0,0,0,0],
+    [16,3,6,5,6,6,7,7,8,8,8,8,8,8,7,6,7,8,8,6,4,4,4,14,14,14,2,12,12,18,16,0,0,0,0,0,0,0,0,0,0,0],
+    [3,6,4,5,6,7,7,8,8,8,8,8,8,8,8,7,4,5,8,8,5,4,3,2,2,15,13,12,11,16,0,0,0,0,0,0,0,0,0,0,0,0],
+    [7,5,5,5,5,5,6,7,8,8,8,8,8,8,8,8,6,3,3,8,8,5,5,12,11,10,10,10,10,16,0,0,0,0,0,0,0,0,0,0,0,0],
+    [6,6,6,6,5,5,5,6,7,8,8,8,8,8,8,8,8,8,2,2,4,9,4,11,10,10,10,10,11,16,0,0,0,0,0,0,0,0,0,0,0,0],
+    [6,6,6,5,5,5,6,6,7,8,8,8,8,8,8,8,7,8,4,2,3,8,12,12,12,10,11,12,16,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [7,6,6,6,5,5,5,6,7,7,7,7,8,8,8,8,8,7,15,18,18,2,2,14,12,11,1,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [7,6,6,6,5,5,5,5,6,6,5,4,5,7,8,8,8,9,12,16,16,14,2,2,18,18,16,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+];
+const JACK_PALETTE = {
+    1:'#4D4B4A',
+    2:'#23201F',
+    3:'#1E1716',
+    4:'#161212',
+    5:'#100E11',
+    6:'#0D0B0D',
+    7:'#0A080B',
+    8:'#070508',
+    9:'#040204',
+    10:'#D9BB96',
+    11:'#937A5F',
+    12:'#624C3A',
+    13:'#4A3222',
+    14:'#392E26',
+    15:'#2F221B',
+    16:'#BCBBBA',
+    17:'#8A8989',
+    18:'#555252'
+};
+
+const PICTURES=[
+  { id:'walnut', label:'Walnut', cols:46, rows:46, grid:WALNUT_GRID, palette:WALNUT_PALETTE,
+    celebrateText:'That good pup is fully painted. Treats all around.' },
+  { id:'abbynorman', label:'Abby & Norman', cols:56, rows:42, grid:ABBYNORMAN_GRID, palette:ABBYNORMAN_PALETTE,
+    celebrateText:'Grandma\'s good dogs, fully painted. Long car ride well spent.' },
+  { id:'clark', label:'Clark', cols:48, rows:36, grid:CLARK_GRID, palette:CLARK_PALETTE,
+    celebrateText:'Clark the pup is all painted up. Good boy.' },
+  { id:'ravendog', label:'Raven', cols:42, rows:42, grid:RAVENDOG_GRID, palette:RAVENDOG_PALETTE,
+    celebrateText:'Raven and the tennis ball, fully painted. Fetch complete.' },
+  { id:'jack', label:'Jack', cols:42, rows:52, grid:JACK_GRID, palette:JACK_PALETTE,
+    celebrateText:'Grandpa\'s good boy Jack, fully painted.' }
+];
+
+let currentIdx=0;
+let selectedNum=null;
+let previewMode=false;
+let filledState={};
+PICTURES.forEach(p=>filledState[p.id]=new Set());
+
+const tabsEl=document.getElementById('tabs');
+const paletteEl=document.getElementById('palette');
+const gridEl=document.getElementById('grid');
+const gridShellEl=document.querySelector('.grid-shell');
+const progressFill=document.getElementById('progressFill');
+const progressLabel=document.getElementById('progressLabel');
+const overlay=document.getElementById('overlay');
+const resetBtn=document.getElementById('resetBtn');
+const peekBtn=document.getElementById('peekBtn');
+
+function totalPaintable(picture){
+  let n=0;
+  picture.grid.forEach(row=>row.forEach(v=>{if(v!==0)n++;}));
+  return n;
+}
+
+function renderTabs(){
+  tabsEl.innerHTML='';
+  PICTURES.forEach((p,i)=>{
+    const btn=document.createElement('button');
+    btn.className='tab'+(i===currentIdx?' active':'');
+    btn.textContent=p.label;
+    btn.onclick=()=>{currentIdx=i;selectedNum=null;previewMode=false;renderAll();};
+    tabsEl.appendChild(btn);
+  });
+}
+
+function renderPalette(){
+  const picture=PICTURES[currentIdx];
+  paletteEl.innerHTML='';
+  const filled=filledState[picture.id];
+  const nums=Object.keys(picture.palette).map(Number).sort((a,b)=>a-b);
+  nums.forEach(num=>{
+    const remaining=countRemaining(picture, num, filled);
+    const sw=document.createElement('div');
+    sw.className='swatch'+(selectedNum===num?' selected':'')+(remaining===0?' done':'');
+    sw.style.background=picture.palette[num];
+    sw.textContent=remaining===0?'✓':num;
+    sw.onclick=()=>{
+      if(remaining===0) return;
+      selectedNum=(selectedNum===num)?null:num;
+      renderPalette();
+      renderGrid();
+    };
+    paletteEl.appendChild(sw);
+  });
+}
+
+function countRemaining(picture, num, filled){
+  let n=0;
+  picture.grid.forEach((row,r)=>row.forEach((v,c)=>{
+    if(v===num && !filled.has(r+'-'+c)) n++;
+  }));
+  return n;
+}
+
+function renderGrid(){
+  const picture=PICTURES[currentIdx];
+  gridEl.style.setProperty('--cols',picture.cols);
+  gridEl.style.setProperty('--rows',picture.rows);
+  gridShellEl.style.setProperty('--cols',picture.cols);
+  gridShellEl.style.setProperty('--rows',picture.rows);
+  gridEl.innerHTML='';
+  gridShellEl.classList.toggle('previewing', previewMode);
+  const filled=filledState[picture.id];
+  picture.grid.forEach((row,r)=>{
+    row.forEach((v,c)=>{
+      const cell=document.createElement('div');
+      const key=r+'-'+c;
+      if(v===0){
+        cell.className='cell empty';
+      } else if(previewMode || filled.has(key)){
+        cell.className='cell filled';
+        cell.style.background=picture.palette[v];
+      } else {
+        cell.className='cell blank';
+        cell.textContent=v;
+        cell.onclick=()=>handleCellClick(picture, r, c, v, cell);
+      }
+      gridEl.appendChild(cell);
+    });
+  });
+}
+
+function handleCellClick(picture, r, c, value, cellEl){
+  if(selectedNum===null || value!==selectedNum){
+    cellEl.classList.remove('shake');
+    void cellEl.offsetWidth;
+    cellEl.classList.add('shake');
+    return;
+  }
+  filledState[picture.id].add(r+'-'+c);
+  renderGrid();
+  renderPalette();
+  updateProgress();
+  checkComplete(picture);
+}
+
+function updateProgress(){
+  const picture=PICTURES[currentIdx];
+  const total=totalPaintable(picture);
+  const done=filledState[picture.id].size;
+  const pct=total===0?0:Math.round((done/total)*100);
+  progressFill.style.width=pct+'%';
+  progressLabel.textContent=pct+'%';
+}
+
+function checkComplete(picture){
+  const total=totalPaintable(picture);
+  const done=filledState[picture.id].size;
+  if(done===total){
+    document.getElementById('celebrateText').textContent=picture.celebrateText;
+    setTimeout(()=>overlay.classList.add('show'),250);
+  }
+}
+
+resetBtn.onclick=()=>{
+  const picture=PICTURES[currentIdx];
+  filledState[picture.id]=new Set();
+  selectedNum=null;
+  previewMode=false;
+  renderAll();
+};
+
+peekBtn.onclick=()=>{
+  previewMode=!previewMode;
+  peekBtn.textContent=previewMode?'Back to my painting':'Peek at the finished picture';
+  renderGrid();
+  renderPalette();
+};
+
+document.getElementById('celebrateClose').onclick=()=>{
+  overlay.classList.remove('show');
+};
+
+function renderAll(){
+  renderTabs();
+  renderPalette();
+  renderGrid();
+  updateProgress();
+  peekBtn.textContent=previewMode?'Back to my painting':'Peek at the finished picture';
+}
+
+renderAll();
+</script>
+</body>
+</html>
