@@ -113,6 +113,7 @@
     border-radius:14px;
     padding:6px;
     border:1px solid var(--line);
+    container-type:inline-size;
   }
   .grid{
     display:grid;
@@ -138,7 +139,7 @@
   .cell.blank{
     background:#FDFAF0;
     color:#C9BC9D;
-    font-size:7px;
+    font-size:clamp(3px, calc(100cqw / var(--cols) * 0.55), 13px);
     cursor:pointer;
     border:1px solid #EEE3C8;
   }
@@ -213,6 +214,15 @@
     border-radius:14px;
     cursor:pointer;
   }
+
+  .credit{
+    text-align:center;
+    margin-top:20px;
+    font-family:'Quicksand', sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
 </style>
 </head>
 <body>
@@ -237,6 +247,7 @@
       <button class="reset-btn" id="resetBtn">Clear this picture</button>
     </div>
   </div>
+  <div class="credit">❤️ Built with love by Uncle Jon</div>
 </div>
 
 <div class="overlay" id="overlay">
