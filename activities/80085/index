@@ -68,6 +68,7 @@
 
   .controls{display:flex;justify-content:center;gap:18px;margin-top:16px;flex-wrap:wrap;}
   .reset-btn{border:none;background:transparent;color:var(--ink-soft);font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;text-decoration:underline;cursor:pointer;padding:6px 10px;}
+  .ruin-btn{border:none;background:transparent;color:#C45B6E;font-family:'Quicksand',sans-serif;font-weight:700;font-size:13px;text-decoration:underline;cursor:pointer;padding:6px 10px;}
 
   .overlay{position:fixed;inset:0;background:rgba(62,42,46,0.55);display:none;align-items:center;justify-content:center;padding:24px;z-index:10;}
   .overlay.show{display:flex;}
@@ -75,6 +76,11 @@
   .celebrate-card h2{font-family:'Baloo 2',sans-serif;margin:0 0 6px;font-size:24px;color:var(--accent);}
   .celebrate-card p{margin:0 0 18px;color:var(--ink-soft);font-weight:600;font-size:14px;}
   .celebrate-card button{border:none;background:var(--accent);color:white;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:15px;padding:12px 22px;border-radius:14px;cursor:pointer;}
+
+  .ruin-overlay{position:fixed;inset:0;background:rgba(40,20,25,0.75);display:none;align-items:center;justify-content:center;padding:24px;z-index:20;flex-direction:column;gap:14px;}
+  .ruin-overlay.show{display:flex;}
+  .ruin-overlay img{max-width:min(420px,90vw);border-radius:16px;border:3px solid #E8A0B0;box-shadow:0 12px 40px rgba(0,0,0,0.4);}
+  .ruin-overlay button{border:none;background:var(--accent);color:white;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:15px;padding:12px 22px;border-radius:14px;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -101,6 +107,7 @@
     <div class="controls">
       <button class="reset-btn" id="resetBtn">Clear this painting</button>
       <button class="reset-btn" id="peekBtn">Peek at the finished painting</button>
+      <button class="ruin-btn" id="ruinBtn">Ruin my painting</button>
     </div>
   </div>
 </div>
@@ -111,6 +118,11 @@
     <p id="celebrateText">You painted those perfect soft pink tits. Nice work!</p>
     <button id="celebrateClose">Done!</button>
   </div>
+</div>
+
+<div class="ruin-overlay" id="ruinOverlay">
+  <img id="ruinImg" src="" alt="Ruined">
+  <button id="ruinClose">Back to my painting</button>
 </div>
 
 <script>
@@ -380,6 +392,10 @@ const progressLabel = document.getElementById('progressLabel');
 const overlay = document.getElementById('overlay');
 const resetBtn = document.getElementById('resetBtn');
 const peekBtn = document.getElementById('peekBtn');
+const ruinBtn = document.getElementById('ruinBtn');
+const ruinOverlay = document.getElementById('ruinOverlay');
+const ruinImg = document.getElementById('ruinImg');
+const ruinClose = document.getElementById('ruinClose');
 
 function activePicture(){ return SETS[currentSet]; }
 
@@ -504,6 +520,13 @@ peekBtn.onclick = () => {
 };
 
 document.getElementById('celebrateClose').onclick = () => overlay.classList.remove('show');
+
+ruinBtn.onclick = () => {
+  // Show the ruined version for the current set
+  ruinImg.src = `ruined_set${currentSet + 1}.png`;
+  ruinOverlay.classList.add('show');
+};
+ruinClose.onclick = () => ruinOverlay.classList.remove('show');
 
 function renderAll(){
   renderPalette();
