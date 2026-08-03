@@ -191,7 +191,7 @@ const SETS = [
     9: '#BC7868',
     10: '#A86B5D',
     11: '#954B49',
-    12: '#2D1720',
+    12: '#2D1720'
   },
   celebrateText: "You painted those perfect soft tits. Nice work!"
 },
@@ -258,9 +258,7 @@ const SETS = [
     7: '#55372D',
     8: '#48302D',
     9: '#3E2321',
-    10: '#2D1C1C',
-    11: '#2E0000',
-    12: '#000000',
+    10: '#2D1C1C'
   },
   celebrateText: "You painted those perfect soft tits. Nice work!"
 },
@@ -329,7 +327,7 @@ const SETS = [
     9: '#825055',
     10: '#6E4646',
     11: '#5A3737',
-    12: '#281919',
+    12: '#281919'
   },
   celebrateText: "You painted those perfect soft tits. Nice work!"
 },
@@ -387,8 +385,6 @@ const SETS = [
     [0,0,0,0,0,0,9,6,6,5,5,5,5,5,5,5,4,5,4,4,4,4,5,6,6,5,5,5,5,5,5,6,6,6,6,6,9,9,9,10,10,10,0,0,0,0,0,0],
   ],
   palette: {
-    1: '#FFF0DC',
-    2: '#F5DCC3',
     3: '#E6C8AA',
     4: '#D7B496',
     5: '#C8A082',
@@ -398,7 +394,7 @@ const SETS = [
     9: '#AA5A6E',
     10: '#8C505A',
     11: '#6E4646',
-    12: '#3C2828',
+    12: '#3C2828'
   },
   celebrateText: "You painted those perfect soft tits. Nice work!"
 },
@@ -456,8 +452,6 @@ const SETS = [
     [0,0,0,0,0,0,10,9,8,6,5,6,8,5,5,5,5,5,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,6,8,6,5,6,9,9,10,0,0,0,0,0,0],
   ],
   palette: {
-    1: '#FFF5EB',
-    2: '#FAE6D7',
     3: '#F0D7C3',
     4: '#E1C3AF',
     5: '#D2AF9B',
@@ -466,8 +460,7 @@ const SETS = [
     8: '#B47873',
     9: '#9B645F',
     10: '#825550',
-    11: '#64413C',
-    12: '#322323',
+    11: '#64413C'
   },
   celebrateText: "You painted those perfect soft tits. Nice work!"
 },
@@ -526,8 +519,6 @@ const SETS = [
   ],
   palette: {
     1: '#FFF8F2',
-    2: '#FAEBE1',
-    3: '#F0DCD2',
     4: '#E1C8BE',
     5: '#D2B4AA',
     6: '#BE9B91',
@@ -535,8 +526,7 @@ const SETS = [
     8: '#9B6E69',
     9: '#875F5A',
     10: '#6E4B46',
-    11: '#553737',
-    12: '#2D1E1E',
+    11: '#553737'
   },
   celebrateText: "You painted those perfect soft tits. Nice work!"
 }
@@ -672,7 +662,8 @@ function checkComplete(){
   const filled = filledState[picture.id];
   const total = totalPaintable(picture);
   if(filled.size === total){
-    document.getElementById('celebrateText').textContent = picture.celebrateText;
+    const count = filled.size.toLocaleString();
+    document.getElementById('celebrateText').textContent = `You touched them ${count} times.`;
     setTimeout(() => overlay.classList.add('show'), 250);
   }
 }
