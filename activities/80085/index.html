@@ -589,13 +589,17 @@ function renderPalette(){
   const picture = activePicture();
   const filled = filledState[picture.id];
   paletteEl.innerHTML = '';
-  const nums = Object.keys(picture.palette).map(Number).sort((a,b)=>a-b);
+  // Only show colors that actually exist in this set's palette
+  const nums = Object.keys(picture.palette)
+    .map(Number)
+    .filter(n => picture.palette[n])
+    .sort((a,b)=>a-b);
   nums.forEach(num => {
     const remaining = countRemaining(picture, num, filled);
     const sw = document.createElement('div');
     sw.className = 'swatch' + (selectedNum===num?' selected':'') + (remaining===0?' done':'');
     sw.style.background = picture.palette[num];
-    // Make number readable on light colors
+    // Make number readable on light/dark colors
     const hex = picture.palette[num].replace('#','');
     const r = parseInt(hex.substr(0,2),16);
     const g = parseInt(hex.substr(2,2),16);
