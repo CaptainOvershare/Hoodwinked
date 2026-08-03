@@ -1,1 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paint Maddox!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F4EDDC;
+      --panel:#FFFDF7;
+      --ink:#3E3226;
+      --ink-soft:#8C7E68;
+      --blue-deep:#2F5C7A;
+      --rust:#D97A45;
+      --mustard:#E3A73A;
+      --line:#E5DCC4;
+      --blank:#FDFAF0;
+      --blank-text:#C9BC9D;
+      --track:#EFE6D2;
+      --shadow:0 10px 30px rgba(62,50,38,0.10);
+    }
 
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      min-height:100vh;
+      background:var(--bg);
+      background-image:
+        radial-gradient(circle at 8% 10%, #EFE2C0 0%, transparent 38%),
+        radial-gradient(circle at 92% 88%, #E4ECE0 0%, transparent 42%);
+      font-family:'Quicksand', sans-serif;
+      color:var(--ink);
+      display:flex;
+      justify-content:center;
+      padding:20px 14px 48px;
+    }
+
+    .wrap{
+      width:100%;
+      max-width:560px;
+    }
+
+    header{
+      text-align:center;
+      margin-bottom:16px;
+    }
+
+    h1{
+      font-family:'Baloo 2',sans-serif;
+      font-weight:800;
+      font-size:clamp(24px,7vw,34px);
+      margin:0 0 4px;
+      color:var(--blue-deep);
+    }
+
+    header p{
+      margin:0;
+      color:var(--ink-soft);
+      font-weight:600;
+      font-size:13px;
+    }
+
+    .card{
+      background:var(--panel);
+      border-radius:22px;
+      padding:16px;
+      box-shadow:var(--shadow);
+      border:1px solid var(--line);
+    }
+
+    .progress-row{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:14px;
+    }
+
+    .progress-track{
+      flex:1;
+      height:10px;
+      border-radius:6px;
+      background:var(--track);
+      overflow:hidden;
+    }
+
+    .progress-fill{
+      height:100%;
+      border-radius:6px;
+      background:linear-gradient(90deg,var(--rust),var(--mustard));
+      width:0%;
+      transition:width .35s ease;
+    }
+
+    .progress-label{
+      font-size:12px;
+      font-weight:700;
+      color:var(--ink-soft);
+      white-space:nowrap;
+    }
+
+    .palette{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      justify-content:center;
+      margin-bottom:16px;
+    }
+
+    .swatch{
+      width:34px;
+      height:34px;
+      border-radius:50%;
+      border:3px solid transparent;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family:'Baloo 2',sans-serif;
+      font-weight:700;
+      font-size:12px;
+      color:rgba(255,255,255,0.85);
+      text-shadow:0 1px 1px rgba(0,0,0,0.35);
+      cursor:pointer;
+      transition:transform .15s ease, border-color .15s ease, opacity .15s ease;
+      user-select:none;
+    }
+
+    .swatch.light-text{
+      color:rgba(0,0,0,0.6);
+      text-shadow:none;
+    }
+
+    .swatch.selected{
+      border-color:var(--blue-deep);
+      transform:scale(1.14);
+    }
+
+    .swatch.done{
+      opacity:0.35;
+    }
+
+    .swatch:active{
+      transform:scale(0.94);
+    }
+
+    .grid-shell{
+      width:100%;
+      aspect-ratio: var(--cols) / var(--rows);
+      background:#FAF4E6;
+      border-radius:14px;
+      padding:6px;
+      border:1px solid var(--line);
+    }
+
+    .grid-shell.previewing{
+      border:2px solid var(--rust);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(var(--cols), 1fr);
+      grid-template-rows:repeat(var(--rows), 1fr);
+      width:100%;
+      height:100%;
+      gap:1px;
+      border-radius:8px;
+      overflow:hidden;
+    }
+
+    .cell{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family:'Quicksand', sans-serif;
+      font-weight:700;
+      user-select:none;
+      -webkit-tap-highlight-color:transparent;
+      min-width:0;
+      min-height:0;
+      overflow:hidden;
+    }
+
+    .cell.empty{
+      background:transparent;
+    }
+
+    .cell.blank{
+      background:var(--blank);
+      color:var(--blank-text);
+      font-size:clamp(3px, calc(100cqw / var(--cols) * 0.55), 13px);
+      cursor:pointer;
+      border:1px solid #EEE3C8;
+    }
+
+    .cell.blank:active{
+      background:#F3E9D2;
+    }
+
+    .cell.filled{
+      color:transparent;
+      animation:pop .28s ease;
+    }
+
+    .cell.shake{
+      animation:shake .3s ease;
+    }
+
+    .controls{
+      display:flex;
+      justify-content:center;
+      gap:18px;
+      margin-top:16px;
+      flex-wrap:wrap;
+    }
+
+    .reset-btn{
+      border:none;
+      background:transparent;
+      color:var(--ink-soft);
+      font-family:'Quicksand',sans-serif;
+      font-weight:700;
+      font-size:13px;
+      text-decoration:underline;
+      cursor:pointer;
+      padding:6px 10px;
+    }
+
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(62,50,38,0.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      z-index:10;
+    }
+
+    .overlay.show{
+      display:flex;
+    }
+
+    .celebrate-card{
+      background:var(--panel);
+      border-radius:22px;
+      padding:28px 24px;
+      text-align:center;
+      max-width:320px;
+      animation:pop .35s ease;
+      border:1px solid var(--line);
+    }
+
+    .celebrate-card h2{
+      font-family:'Baloo 2',sans-serif;
+      margin:0 0 6px;
+      font-size:24px;
+      color:var(--blue-deep);
+    }
+
+    .celebrate-card p{
+      margin:0 0 18px;
+      color:var(--ink-soft);
+      font-weight:600;
+      font-size:14px;
+    }
+
+    .celebrate-card button{
+      border:none;
+      background:var(--rust);
+      color:white;
+      font-family:'Baloo 2',sans-serif;
+      font-weight:700;
+      font-size:15px;
+      padding:12px 22px;
+      border-radius:14px;
+      cursor:pointer;
+    }
+
+    @keyframes pop{
+      0%{ transform:scale(0.55); }
+      60%{ transform:scale(1.12); }
+      100%{ transform:scale(1); }
+    }
+
+    @keyframes shake{
+      0%,100%{ transform:translateX(0); }
+      25%{ transform:translateX(-3px); }
+      75%{ transform:translateX(3px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Paint Maddox!</h1>
+      <p>Tap a color, then tap the matching square</p>
+    </header>
+
+    <div class="card">
+      <div class="progress-row">
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-label" id="progressLabel">0%</div>
+      </div>
+
+      <div class="palette" id="palette"></div>
+
+      <div class="grid-shell" id="gridShell">
+        <div class="grid" id="grid"></div>
+      </div>
+
+      <div class="controls">
+        <button class="reset-btn" id="resetBtn">Clear this painting</button>
+        <button class="reset-btn" id="peekBtn">Peek at the finished painting</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="celebrate-card">
+      <h2>You did it!</h2>
+      <p id="celebrateText">You painted Maddox! Nice work!</p>
+      <button id="celebrateClose">Done!</button>
+    </div>
+  </div>
+
+  <script>
+    const MADDOX_SQUARES = (() => {
+      const KEY = '.123456789ABCDEFGHIJKLMNO';
+      const rows = [
+        '..............KJL...................................',
+        '.............LB49J..................................',
+        '.............M443BL.................................',
+        '.............L4443BL............................MLHJ',
+        '............KI49733EM.........................MME77J',
+        '............ME6EB435LE.......................MH9469J',
+        '............JB9IEA42CK......................LA35ABBJ',
+        '............JBBKIB642IJ....................LA34BEBEI',
+        '............J6GMMG9625LL..................L926BCGBHJ',
+        '............J6ENNME962AMG...............MK626BEII9KJ',
+        '............L4BMOMMEF26JLA..............KA239CGMG9LL',
+        '............J4AIONONF52CFB............EIC529BKMKC9MI',
+        '............J6AEOOMNI52537EE8........79AA26ENONIA9M.',
+        '............IB9CNMGNC22479BEEEB7EHHHE93355IOONKE6FL.',
+        '............AF7BJKGIB23779B979779BDHE97328OOONGB7JE.',
+        'DD.........BF86BFGFA6477BGGFC733479BFB772EOOOKC6BJ8.',
+        '79DD.......EIAHBCFA5379FIFFFFB3349CEFIE746NOKGA4IE..',
+        '3479D9.....EIMLI63227BFJKIIIIE649BFFJIIE76GGGC69F6..',
+        '33479DD....FKF5532279FJMGFNKIGA6AAFJKMJFE38GCCCAFB..',
+        '333377DDD...CF522279EKJC22JOJF6A9IK63LOJEB5CAFLANE..',
+        '33333447DDD.C622247BIJJHB5IOMGABCMMA5AMOGB425FNMNE..',
+        '333333777DDDE52237BFJ8215BJMMIAAIKNFELLMMEB2268JKF..',
+        '33333449DD9DDA2247BC52N713FJJJACIKKB212HNJB6225IC...',
+        '33347DDDD7747H3247669586526FIF9FFIC45H22LKB7222B5...',
+        '3377DDD77349EJF236BFJ355325CFF9BFC8282C56JE92227....',
+        '347DHD94349EMI823IMIMIA6658FFBBCII652856I8A65237....',
+        '349DED434DHJKF32CKOMJMJFF8FFBBBEJJAA96BMNF692274....',
+        '337EE7337EEMK625LJOMGJJJCAFCBBBFJKAGFGMOKNF3244.....',
+        '34EKF337BFMMF82BNLONJFFIAFE979BBIKFIKMMLOON672......',
+        '3BLI934BEKNIC52JKLNKIJKCAF964479EKJFNJJKOON89.......',
+        '7JME437BEMMGAA3EJLMKNMFACA7447779HJFMKJNOOMB9.......',
+        'ENJ9449EJNKCIA3EJKJBBBA6A74777777BFGJOOOOONH........',
+        'JLE737BEMNIFIG46GI94777667DD7447D9BFEMNNOONH........',
+        'MJ9336CJNLF8JJ66FE43444647DDD447DD9EBBBBMKNDC.......',
+        'ND4346FJNMFAIME9IB3794744932394DHD7BB977BJLEA.......',
+        'LB337AFNNKC8JNIAEC73774794211341177999749JEDA.......',
+        'K6349CKNOMF5CMMCBF72297DH922227229D999999FBIF.......',
+        'I5349FJNOMG85ALJCGE3177HLD432239DDHD9924C99I........',
+        'H447BCIMOMJA58JGFFIB27DNLHD31112DLOD7714G6EH........',
+        'B337CCJNOMJC65AFGKFF22DHNHD74239DNOHD23CFAJI........',
+        'C349FCGMONKF658FFKKF332LHHDDD6D9DNNH92CJFAHG........',
+        '637BJAFMOOMFA558GIMG522CGGEC58CHLHH92BMJCEF.........',
+        '537CJAFKOOMJC855FKKIA25BKKGG8CGGKL953IMIAII.........',
+        '537EJA8JNNMJFA65AIMKF53CKGKKCGGKOH23EMMCCMC.........',
+        '437GJA8GMOOKFC856FMMGA26KKNNCGKNOL55JMCAGMC.........',
+        '349FKF8FMONMGFA658JMJC52HMNOGKMON52HKCCCKOG.........',
+        '349IKG88INOMICCA55FMMF81OKMNGKNNL4CIFFCGNMA.........',
+        '34AGKFA8FMOOJFFA65CMNGA2OOKNGMNON5FFIKFFNL..........',
+        '349IMIC88KNOMJCC85AKOKF4EN68CCHO3AFLOKCJNI..........',
+        '34BFKKF86CMOMJFCF66FNMGD3LOLDLOL4CJOOJCKNG..........',
+        '349FIKJC68FMNKGGF85CMOJBD59EHHD7DIMONFFMM8..........',
+        '54ACKJGC86AMNNKGGC5AKNKFDD23594DHMOONCKNF...........',
+        '649CIKKGA8AINNOKGF86IMNJCDHDDDLHMOONIFMJ5...........',
+        'A46AFIKKF868INNNKFA6CJNJIFCBEEILOOOLAKME............',
+        'A46AFIJKKC88CKONMIF8AFKJIIGGIJMNNOMFFMLE............',
+        'B46AFIKKMIC86CMONMIFCCFJIIIIKMNNONJCKMF8............',
+        'F66ACCGJMJFC6AIMONJFCFFFIIIJKMOONJCIMF6.............'
+      ];
+
+      return {
+        id: 'maddox-sq',
+        cols: 52,
+        rows: 57,
+        grid: rows.map(r => [...r].map(ch => KEY.indexOf(ch))),
+        palette: {
+          1: '#000000',
+          2: '#0E0B0B',
+          3: '#161314',
+          4: '#1D1A1B',
+          5: '#271912',
+          6: '#322016',
+          7: '#272322',
+          8: '#472312',
+          9: '#372B24',
+          10: '#4C2C17',
+          11: '#4D3220',
+          12: '#643719',
+          13: '#4B3C32',
+          14: '#694022',
+          15: '#74421C',
+          16: '#884325',
+          17: '#7B522F',
+          18: '#8E5525',
+          19: '#985B26',
+          20: '#AB612F',
+          21: '#A56C36',
+          22: '#B97337',
+          23: '#C18247',
+          24: '#D39856'
+        },
+        celebrateText: 'You painted Maddox! Nice work!'
+      };
+    })();
+
+    const picture = MADDOX_SQUARES;
+
+    const paletteEl = document.getElementById('palette');
+    const gridEl = document.getElementById('grid');
+    const gridShellEl = document.getElementById('gridShell');
+    const progressFillEl = document.getElementById('progressFill');
+    const progressLabelEl = document.getElementById('progressLabel');
+    const resetBtn = document.getElementById('resetBtn');
+    const peekBtn = document.getElementById('peekBtn');
+    const overlayEl = document.getElementById('overlay');
+    const celebrateTextEl = document.getElementById('celebrateText');
+    const celebrateCloseEl = document.getElementById('celebrateClose');
+
+    celebrateTextEl.textContent = picture.celebrateText;
+
+    let selectedColor = null;
+    let previewing = false;
+
+    const userGrid = picture.grid.map(row => row.map(() => 0));
+
+    const totalPaintable = picture.grid.flat().filter(v => v !== 0).length;
+
+    gridShellEl.style.setProperty('--cols', picture.cols);
+    gridShellEl.style.setProperty('--rows', picture.rows);
+
+    function getFirstAvailableColor(){
+      const paletteKeys = Object.keys(picture.palette).map(Number).sort((a,b)=>a-b);
+      return paletteKeys.find(color => !isColorDone(color)) ?? paletteKeys[0] ?? null;
+    }
+
+    function isLightColor(hex){
+      const r = parseInt(hex.slice(1,3), 16);
+      const g = parseInt(hex.slice(3,5), 16);
+      const b = parseInt(hex.slice(5,7), 16);
+      const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+      return luminance > 0.58;
+    }
+
+    function isColorDone(colorNum){
+      for(let y=0; y<picture.rows; y++){
+        for(let x=0; x<picture.cols; x++){
+          if(picture.grid[y][x] === colorNum && userGrid[y][x] !== colorNum){
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function countFilled(){
+      let count = 0;
+      for(let y=0; y<picture.rows; y++){
+        for(let x=0; x<picture.cols; x++){
+          if(userGrid[y][x] !== 0) count++;
+        }
+      }
+      return count;
+    }
+
+    function updateProgress(){
+      const filled = countFilled();
+      const pct = totalPaintable ? Math.round((filled / totalPaintable) * 100) : 0;
+      progressFillEl.style.width = pct + '%';
+      progressLabelEl.textContent = pct + '%';
+    }
+
+    function checkComplete(){
+      if(countFilled() === totalPaintable){
+        overlayEl.classList.add('show');
+      }
+    }
+
+    function renderPalette(){
+      paletteEl.innerHTML = '';
+
+      const paletteKeys = Object.keys(picture.palette).map(Number).sort((a,b)=>a-b);
+
+      paletteKeys.forEach(colorNum => {
+        const swatch = document.createElement('button');
+        swatch.className = 'swatch';
+        swatch.type = 'button';
+        swatch.style.background = picture.palette[colorNum];
+        swatch.textContent = colorNum;
+
+        if(isLightColor(picture.palette[colorNum])){
+          swatch.classList.add('light-text');
+        }
+
+        if(selectedColor === colorNum){
+          swatch.classList.add('selected');
+        }
+
+        if(isColorDone(colorNum)){
+          swatch.classList.add('done');
+        }
+
+        swatch.addEventListener('click', () => {
+          selectedColor = colorNum;
+          renderPalette();
+        });
+
+        paletteEl.appendChild(swatch);
+      });
+    }
+
+    function flashWrongCell(cellEl){
+      cellEl.classList.remove('shake');
+      void cellEl.offsetWidth;
+      cellEl.classList.add('shake');
+      setTimeout(() => cellEl.classList.remove('shake'), 300);
+    }
+
+    function handleCellClick(x, y, cellEl){
+      if(previewing) return;
+
+      const target = picture.grid[y][x];
+      if(target === 0) return;
+      if(userGrid[y][x] !== 0) return;
+      if(selectedColor == null) return;
+
+      if(target === selectedColor){
+        userGrid[y][x] = selectedColor;
+        renderSquares();
+        renderPalette();
+        updateProgress();
+        checkComplete();
+
+        if(isColorDone(selectedColor)){
+          const nextColor = getFirstAvailableColor();
+          selectedColor = nextColor ?? selectedColor;
+          renderPalette();
+        }
+      } else {
+        flashWrongCell(cellEl);
+      }
+    }
+
+    function renderSquares(){
+      gridShellEl.classList.toggle('previewing', previewing);
+      gridEl.innerHTML = '';
+      gridEl.style.setProperty('--cols', picture.cols);
+      gridEl.style.setProperty('--rows', picture.rows);
+
+      for(let y=0; y<picture.rows; y++){
+        for(let x=0; x<picture.cols; x++){
+          const target = picture.grid[y][x];
+          const painted = userGrid[y][x];
+
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+
+          if(target === 0){
+            cell.classList.add('empty');
+          } else if(previewing){
+            cell.classList.add('filled');
+            cell.style.background = picture.palette[target];
+          } else if(painted !== 0){
+            cell.classList.add('filled');
+            cell.style.background = picture.palette[painted];
+          } else {
+            cell.classList.add('blank');
+            cell.textContent = target;
+            cell.addEventListener('click', () => handleCellClick(x, y, cell));
+          }
+
+          gridEl.appendChild(cell);
+        }
+      }
+    }
+
+    function resetPainting(){
+      for(let y=0; y<picture.rows; y++){
+        for(let x=0; x<picture.cols; x++){
+          userGrid[y][x] = 0;
+        }
+      }
+      selectedColor = getFirstAvailableColor();
+      previewing = false;
+      renderSquares();
+      renderPalette();
+      updateProgress();
+    }
+
+    function peekPainting(){
+      previewing = true;
+      renderSquares();
+
+      setTimeout(() => {
+        previewing = false;
+        renderSquares();
+      }, 1500);
+    }
+
+    resetBtn.addEventListener('click', resetPainting);
+    peekBtn.addEventListener('click', peekPainting);
+    celebrateCloseEl.addEventListener('click', () => overlayEl.classList.remove('show'));
+    overlayEl.addEventListener('click', (e) => {
+      if(e.target === overlayEl) overlayEl.classList.remove('show');
+    });
+
+    selectedColor = getFirstAvailableColor();
+    renderPalette();
+    renderSquares();
+    updateProgress();
+  </script>
+</body>
+</html>
