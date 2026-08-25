@@ -142,6 +142,31 @@
     font-weight: 800;
     line-height: 34px;
   }
+  .sheets {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+  .sheet {
+    appearance: none;
+    border: 0;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: #16161a;
+    color: var(--mute);
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    cursor: pointer;
+  }
+  .sheet[aria-pressed="true"] {
+    background: #2a181c;
+    color: #ffb3c8;
+    box-shadow: inset 0 0 0 1px #ff3db4;
+  }
   .tools {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
@@ -192,6 +217,9 @@
   <div class="tray">
     <div class="pegs" role="listbox" aria-label="LED colors" id="pegsClassic"></div>
     <div class="pegs" role="listbox" aria-label="Skin tones" id="pegsSkin"></div>
+    <div class="sheets">
+      <button class="sheet" id="sheetHeart" type="button" aria-pressed="false">Heart</button>
+    </div>
     <div class="tools">
       <button class="tool" id="density" type="button" aria-pressed="false">Big holes</button>
       <button class="tool" id="undo" type="button">Undo</button>
@@ -231,10 +259,12 @@
   const undoBtn = document.getElementById("undo");
   const saveBtn = document.getElementById("save");
   const clearBtn = document.getElementById("clear");
+  const heartBtn = document.getElementById("sheetHeart");
 
   const state = {
     color: "red",
     density: "fine",
+    sheet: null,
     holes: [],
     cols: 0,
     rows: 0,
@@ -288,7 +318,9 @@
     state.color = spec ? spec.id : null;
     state.clearArmed = false;
     clearBtn.textContent = "Clear";
-    hint.textContent = state.color ? "Tap holes to plant " + state.color + " pegs." : "Tap a peg to pull it.";
+    hint.textContent = state.color
+      ? (state.sheet ? "Hint is dull. Punch any color." : "Tap holes to plant " + state.color + " pegs.")
+      : (state.sheet ? "Pull a peg. The hint stays." : "Tap a peg to pull it.");
     document.querySelectorAll(".peg").forEach((el) => {
       const isOn = (state.color === null && el.dataset.id === "pull") || el.dataset.id === state.color;
       el.setAttribute("aria-pressed", isOn ? "true" : "false");
@@ -339,7 +371,8 @@
           r, c,
           x: x0 + c * pitch,
           y: oy + r * rowPitch,
-          color: prev.get(r + "," + c) || null
+          color: prev.get(r + "," + c) || null,
+          ghost: null
         });
       }
     }
@@ -348,7 +381,40 @@
     state.rows = rows;
     state.radius = radius;
     state.pitch = pitch;
+    stampSheet();
     draw();
+  }
+
+  function insideHeart(x, y) {
+    const a = x * x + y * y - 1;
+    return a * a * a - x * x * y * y * y <= 0;
+  }
+
+  function heartHintColor(x, y) {
+    const leftLobe = Math.hypot(x + 0.40, y - 0.55);
+    const rightLobe = Math.hypot(x - 0.40, y - 0.55);
+    if (y > 0.58 && leftLobe < 0.11) return "white";
+    if (y > 0.28 && (leftLobe < 0.24 || rightLobe < 0.24)) return "hot";
+    return "red";
+  }
+
+  function stampSheet() {
+    for (const hole of state.holes) hole.ghost = null;
+    if (state.sheet !== "heart") return;
+    const box = canvas.getBoundingClientRect();
+    const cx = box.width / 2;
+    const cy = box.height * 0.46;
+    const scale = Math.min(box.width, box.height) * 0.22;
+    if (scale < 8) return;
+    for (const hole of state.holes) {
+      const x = (hole.x - cx) / scale;
+      const y = (cy - hole.y) / scale;
+      if (insideHeart(x, y)) hole.ghost = heartHintColor(x, y);
+    }
+  }
+
+  function syncSheetBtn() {
+    heartBtn.setAttribute("aria-pressed", state.sheet === "heart" ? "true" : "false");
   }
 
   function drawHole(h) {
@@ -359,6 +425,23 @@
       ctx.fillStyle = "#030304";
       ctx.arc(x, y, rad, 0, Math.PI * 2);
       ctx.fill();
+      if (h.ghost) {
+        const spec = resolveColor(h.ghost);
+        if (!spec) return;
+        const rgb = hexToRgb(spec.hex);
+        const glow = ctx.createRadialGradient(x, y, 0, x, y, rad * 1.15);
+        glow.addColorStop(0, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0.28)");
+        glow.addColorStop(1, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0)");
+        ctx.beginPath();
+        ctx.fillStyle = glow;
+        ctx.arc(x, y, rad * 1.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0.34)";
+        ctx.arc(x, y, rad * 0.72, 0, Math.PI * 2);
+        ctx.fill();
+        return;
+      }
       const leak = ctx.createRadialGradient(x, y, 0, x, y, rad);
       leak.addColorStop(0, "rgba(255, 214, 140, 0.22)");
       leak.addColorStop(0.45, "rgba(255, 170, 70, 0.06)");
@@ -477,6 +560,7 @@
     localStorage.setItem(STORE, JSON.stringify({
       density: state.density,
       color: state.color,
+      sheet: state.sheet,
       cells
     }));
   }
@@ -494,10 +578,18 @@
   const saved = restore();
   if (saved) {
     if (saved.density === "coarse" || saved.density === "fine") state.density = saved.density;
+    if (saved.sheet === "heart") state.sheet = "heart";
     if (saved.color === null || COLORS.some((c) => c.id === saved.color)) selectColor(saved.color);
   }
+  syncSheetBtn();
   densityBtn.setAttribute("aria-pressed", state.density === "coarse" ? "true" : "false");
   densityBtn.textContent = state.density === "coarse" ? "More pegs" : "Big holes";
+
+  if (/\bsheet=heart\b/.test(location.search)) {
+    state.sheet = "heart";
+    syncSheetBtn();
+    selectColor(state.color);
+  }
 
   function plantDemo() {
     const midR = Math.floor(state.rows / 2);
@@ -530,6 +622,17 @@
     state.undo = [];
     persist();
     layout();
+  });
+
+  heartBtn.addEventListener("click", () => {
+    state.sheet = state.sheet === "heart" ? null : "heart";
+    state.clearArmed = false;
+    clearBtn.textContent = "Clear";
+    syncSheetBtn();
+    stampSheet();
+    selectColor(state.color);
+    draw();
+    persist();
   });
 
   undoBtn.addEventListener("click", () => {
