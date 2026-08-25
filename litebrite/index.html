@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0b0b0d">
+<title>Peg Light</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #070709;
+    --shell: #1a1a1e;
+    --shell-hi: #2c2c32;
+    --ink: #f3efe6;
+    --mute: #9a9488;
+    --well: #050506;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--void);
+    color: var(--ink);
+    font-family: Nunito, ui-rounded, system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    overflow: hidden;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px 6px;
+  }
+  h1 {
+    margin: 0;
+    font-family: Bungee, Impact, sans-serif;
+    font-size: clamp(18px, 5.4vw, 26px);
+    letter-spacing: 0.04em;
+    font-weight: 400;
+    line-height: 1;
+  }
+  .hint {
+    margin: 0;
+    color: var(--mute);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .box {
+    flex: 1;
+    min-height: 0;
+    margin: 6px 12px 10px;
+    padding: 10px;
+    border-radius: 22px;
+    background:
+      linear-gradient(180deg, var(--shell-hi) 0%, var(--shell) 38%, #121214 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.10),
+      inset 0 -18px 28px rgba(0,0,0,0.35),
+      0 18px 40px rgba(0,0,0,0.45);
+    display: flex;
+    flex-direction: column;
+  }
+  .screen {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #050506;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.04),
+      inset 0 30px 50px rgba(0,0,0,0.45);
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    cursor: crosshair;
+  }
+  .tray {
+    padding: 4px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .pegs {
+    display: flex;
+    gap: 7px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+  .peg {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+  }
+  .peg {
+    appearance: none;
+    border: 0;
+    padding: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    background:
+      radial-gradient(circle at 32% 28%, rgba(255,255,255,0.85), transparent 26%),
+      radial-gradient(circle at 50% 55%, var(--peg) 0%, color-mix(in srgb, var(--peg) 70%, black) 72%, #1a1a1a 100%);
+    box-shadow:
+      0 0 0 2px #0b0b0d,
+      0 6px 0 #0a0a0c,
+      0 0 16px color-mix(in srgb, var(--peg) 55%, transparent);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .peg:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  .peg[aria-pressed="true"] {
+    transform: translateY(-4px) scale(1.08);
+    box-shadow:
+      0 0 0 3px #f3efe6,
+      0 8px 0 #0a0a0c,
+      0 0 22px color-mix(in srgb, var(--peg) 80%, transparent);
+  }
+  .peg.pull {
+    background:
+      radial-gradient(circle at 50% 50%, #2a2a2e 0%, #111 70%);
+    box-shadow: 0 0 0 2px #0b0b0d, 0 6px 0 #0a0a0c;
+    color: #cfc8bb;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 34px;
+  }
+  .tools {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .tool {
+    appearance: none;
+    border: 0;
+    height: 40px;
+    border-radius: 12px;
+    background: #16161a;
+    color: var(--ink);
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    cursor: pointer;
+  }
+  .tool:active { transform: translateY(1px); }
+  .tool[aria-pressed="true"] {
+    background: #2a2418;
+    box-shadow: inset 0 0 0 1px #e3b341;
+    color: #f2d48a;
+  }
+  .tool.danger:active { background: #3a1515; }
+  @media (min-width: 720px) {
+    .peg { width: 46px; height: 46px; }
+    .peg.pull { line-height: 46px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .peg { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Peg Light</h1>
+    <p class="hint" id="hint">Pick a color. Tap the holes.</p>
+  </header>
+
+  <div class="box">
+    <div class="screen">
+      <canvas id="board" width="720" height="960" aria-label="Light pegboard"></canvas>
+    </div>
+  </div>
+
+  <div class="tray">
+    <div class="pegs" role="listbox" aria-label="LED colors" id="pegsClassic"></div>
+    <div class="pegs" role="listbox" aria-label="Skin tones" id="pegsSkin"></div>
+    <div class="tools">
+      <button class="tool" id="density" type="button" aria-pressed="false">Big holes</button>
+      <button class="tool" id="undo" type="button">Undo</button>
+      <button class="tool" id="save" type="button">Save</button>
+      <button class="tool danger" id="clear" type="button">Clear</button>
+    </div>
+  </div>
+
+<script>
+(function () {
+  const COLORS = [
+    { id: "red",     hex: "#ff1f1f", group: "lite" },
+    { id: "orange",  hex: "#ff7a00", group: "lite" },
+    { id: "yellow",  hex: "#ffe600", group: "lite" },
+    { id: "green",   hex: "#3dff4a", group: "lite" },
+    { id: "cyan",    hex: "#1ee7ff", group: "lite" },
+    { id: "blue",    hex: "#2f6bff", group: "lite" },
+    { id: "violet",  hex: "#b44dff", group: "lite" },
+    { id: "hot",     hex: "#ff3db4", group: "lite" },
+    { id: "white",   hex: "#f7f7ff", group: "lite" },
+    { id: "fair",    hex: "#F6D7C8", group: "skin" },
+    { id: "light",   hex: "#E3CDB5", group: "skin" },
+    { id: "gold",    hex: "#D1A58D", group: "skin" },
+    { id: "tan",     hex: "#C5917A", group: "skin" },
+    { id: "flush",   hex: "#BC7868", group: "skin" },
+    { id: "brown",   hex: "#8E6B59", group: "skin" },
+    { id: "deep",    hex: "#5C3F34", group: "skin" },
+    { id: "darkest", hex: "#3E2321", group: "skin" }
+  ];
+  const STORE = "hoodwinked.peglight.v1";
+  const canvas = document.getElementById("board");
+  const ctx = canvas.getContext("2d");
+  const pegsClassic = document.getElementById("pegsClassic");
+  const pegsSkin = document.getElementById("pegsSkin");
+  const hint = document.getElementById("hint");
+  const densityBtn = document.getElementById("density");
+  const undoBtn = document.getElementById("undo");
+  const saveBtn = document.getElementById("save");
+  const clearBtn = document.getElementById("clear");
+
+  const state = {
+    color: "red",
+    density: "fine",
+    holes: [],
+    cols: 0,
+    rows: 0,
+    radius: 8,
+    pitch: 18,
+    undo: [],
+    painting: false,
+    lastIndex: -1,
+    clearArmed: false
+  };
+
+  function resolveColor(id) {
+    const alias = {
+      pink: "hot",
+      ballet: "fair",
+      blush: "flush",
+      magenta: "hot",
+      rose: "flush",
+      berry: "brown"
+    };
+    if (alias[id]) id = alias[id];
+    return COLORS.find((c) => c.id === id) || null;
+  }
+
+  function addPeg(c, parent) {
+    const b = document.createElement("button");
+    b.className = "peg";
+    b.type = "button";
+    b.style.setProperty("--peg", c.hex);
+    b.dataset.id = c.id;
+    b.setAttribute("role", "option");
+    b.setAttribute("aria-label", c.id);
+    b.setAttribute("aria-pressed", c.id === state.color ? "true" : "false");
+    b.addEventListener("click", () => selectColor(c.id));
+    parent.appendChild(b);
+  }
+  COLORS.filter((c) => c.group === "lite").forEach((c) => addPeg(c, pegsClassic));
+  COLORS.filter((c) => c.group === "skin").forEach((c) => addPeg(c, pegsSkin));
+  const pull = document.createElement("button");
+  pull.className = "peg pull";
+  pull.type = "button";
+  pull.dataset.id = "pull";
+  pull.setAttribute("aria-label", "Pull peg");
+  pull.setAttribute("aria-pressed", "false");
+  pull.textContent = "×";
+  pull.addEventListener("click", () => selectColor(null));
+  pegsClassic.appendChild(pull);
+
+  function selectColor(id) {
+    const spec = id === null ? null : resolveColor(id);
+    state.color = spec ? spec.id : null;
+    state.clearArmed = false;
+    clearBtn.textContent = "Clear";
+    hint.textContent = state.color ? "Tap holes to plant " + state.color + " pegs." : "Tap a peg to pull it.";
+    document.querySelectorAll(".peg").forEach((el) => {
+      const isOn = (state.color === null && el.dataset.id === "pull") || el.dataset.id === state.color;
+      el.setAttribute("aria-pressed", isOn ? "true" : "false");
+    });
+  }
+
+  function hexToRgb(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+
+  function layout() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const cssW = Math.max(1, rect.width);
+    const cssH = Math.max(1, rect.height);
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const coarse = state.density === "coarse";
+    const pad = coarse ? 14 : 10;
+    const minPitch = coarse ? 28 : 16;
+    const availW = Math.max(1, cssW - pad * 2);
+    const availH = Math.max(1, cssH - pad * 2);
+    const cols = Math.max(8, Math.floor(availW / minPitch));
+    const pitch = availW / Math.max(cols - 0.5, 1);
+    const rowPitch = pitch * 0.86;
+    const rows = Math.max(10, Math.floor(availH / rowPitch) + 1);
+    const usedW = (cols - 1) * pitch;
+    const usedH = (rows - 1) * rowPitch;
+    const ox = (cssW - usedW) / 2;
+    const oy = Math.max(pad * 0.4, (cssH - usedH) / 2);
+    const radius = pitch * 0.34;
+
+    const prev = new Map();
+    state.holes.forEach((h) => {
+      if (h.color) prev.set(h.r + "," + h.c, h.color);
+    });
+
+    const holes = [];
+    for (let r = 0; r < rows; r++) {
+      const odd = r % 2;
+      const n = cols - odd;
+      const x0 = ox + odd * (pitch / 2);
+      for (let c = 0; c < n; c++) {
+        holes.push({
+          r, c,
+          x: x0 + c * pitch,
+          y: oy + r * rowPitch,
+          color: prev.get(r + "," + c) || null
+        });
+      }
+    }
+    state.holes = holes;
+    state.cols = cols;
+    state.rows = rows;
+    state.radius = radius;
+    state.pitch = pitch;
+    draw();
+  }
+
+  function drawHole(h) {
+    const { x, y } = h;
+    const rad = state.radius;
+    if (!h.color) {
+      ctx.beginPath();
+      ctx.fillStyle = "#030304";
+      ctx.arc(x, y, rad, 0, Math.PI * 2);
+      ctx.fill();
+      const leak = ctx.createRadialGradient(x, y, 0, x, y, rad);
+      leak.addColorStop(0, "rgba(255, 214, 140, 0.22)");
+      leak.addColorStop(0.45, "rgba(255, 170, 70, 0.06)");
+      leak.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.beginPath();
+      ctx.fillStyle = leak;
+      ctx.arc(x, y, rad, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+    const spec = resolveColor(h.color);
+    if (!spec) return;
+    const rgb = hexToRgb(spec.hex);
+    const skin = spec.group === "skin";
+    const glowR = skin ? rad * 1.55 : rad * 2.25;
+    const glow = ctx.createRadialGradient(x, y, rad * 0.15, x, y, glowR);
+    glow.addColorStop(0, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + "," + (skin ? "0.72" : "0.98") + ")");
+    glow.addColorStop(0.4, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + "," + (skin ? "0.22" : "0.38") + ")");
+    glow.addColorStop(1, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0)");
+    ctx.beginPath();
+    ctx.fillStyle = glow;
+    ctx.arc(x, y, glowR, 0, Math.PI * 2);
+    ctx.fill();
+
+    const hi = skin ? "rgba(255,236,220,0.72)" : "rgba(255,255,255,0.95)";
+    const shade = skin ? 0.72 : 0.55;
+    const body = ctx.createRadialGradient(x - rad * 0.28, y - rad * 0.32, rad * 0.1, x, y, rad);
+    body.addColorStop(0, hi);
+    body.addColorStop(0.22, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",1)");
+    body.addColorStop(0.78, "rgba(" + Math.round(rgb.r * shade) + "," + Math.round(rgb.g * shade) + "," + Math.round(rgb.b * shade) + ",1)");
+    body.addColorStop(1, skin ? "rgba(40,24,18,0.88)" : "rgba(20,16,12,0.95)");
+    ctx.beginPath();
+    ctx.fillStyle = body;
+    ctx.arc(x, y, rad, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function draw() {
+    const w = canvas.getBoundingClientRect().width;
+    const h = canvas.getBoundingClientRect().height;
+    ctx.clearRect(0, 0, w, h);
+    const back = ctx.createRadialGradient(w * 0.5, h * 0.42, 20, w * 0.5, h * 0.5, Math.max(w, h) * 0.72);
+    back.addColorStop(0, "#1a140c");
+    back.addColorStop(0.55, "#0b0a08");
+    back.addColorStop(1, "#050506");
+    ctx.fillStyle = back;
+    ctx.fillRect(0, 0, w, h);
+    for (const hole of state.holes) drawHole(hole);
+  }
+
+  function nearest(px, py) {
+    let best = -1;
+    let bestD = state.radius * 1.35;
+    for (let i = 0; i < state.holes.length; i++) {
+      const h = state.holes[i];
+      const dx = h.x - px;
+      const dy = h.y - py;
+      const d = Math.hypot(dx, dy);
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  function apply(index) {
+    if (index < 0) return;
+    const hole = state.holes[index];
+    const next = state.color;
+    if (hole.color === next) return;
+    state.undo.push({ i: index, prev: hole.color });
+    if (state.undo.length > 400) state.undo.shift();
+    hole.color = next;
+    drawHole(hole);
+    persist();
+  }
+
+  function pointerPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  }
+
+  function down(e) {
+    e.preventDefault();
+    state.painting = true;
+    state.lastIndex = -1;
+    const p = pointerPos(e);
+    const i = nearest(p.x, p.y);
+    state.lastIndex = i;
+    apply(i);
+  }
+  function move(e) {
+    if (!state.painting) return;
+    e.preventDefault();
+    const p = pointerPos(e);
+    const i = nearest(p.x, p.y);
+    if (i !== state.lastIndex) {
+      state.lastIndex = i;
+      apply(i);
+    }
+  }
+  function up() { state.painting = false; }
+
+  canvas.addEventListener("pointerdown", down);
+  canvas.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", up);
+  window.addEventListener("pointercancel", up);
+
+  function persist() {
+    const cells = {};
+    state.holes.forEach((h) => {
+      if (h.color) cells[h.r + "," + h.c] = h.color;
+    });
+    localStorage.setItem(STORE, JSON.stringify({
+      density: state.density,
+      color: state.color,
+      cells
+    }));
+  }
+
+  function restore() {
+    try {
+      const raw = localStorage.getItem(STORE);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  const saved = restore();
+  if (saved) {
+    if (saved.density === "coarse" || saved.density === "fine") state.density = saved.density;
+    if (saved.color === null || COLORS.some((c) => c.id === saved.color)) selectColor(saved.color);
+  }
+  densityBtn.setAttribute("aria-pressed", state.density === "coarse" ? "true" : "false");
+  densityBtn.textContent = state.density === "coarse" ? "More pegs" : "Big holes";
+
+  function plantDemo() {
+    const midR = Math.floor(state.rows / 2);
+    const midC = Math.floor(state.cols / 2);
+    const heart = [
+      [-6,-3,"red"],[-6,-2,"hot"],[-6,1,"hot"],[-6,2,"red"],
+      [-5,-4,"orange"],[-5,-1,"yellow"],[-5,0,"yellow"],[-5,3,"orange"],
+      [-4,-4,"green"],[-4,0,"cyan"],[-4,3,"green"],
+      [-3,-3,"blue"],[-3,2,"blue"],
+      [-2,-2,"violet"],[-2,1,"violet"],
+      [-1,-1,"white"],[-1,0,"white"]
+    ];
+    const skin = ["fair","light","gold","tan","flush","brown","deep","darkest"];
+    heart.forEach(([dr, dc, color]) => {
+      const hole = state.holes.find((h) => h.r === midR + dr && h.c === midC + dc);
+      if (hole) hole.color = color;
+    });
+    skin.forEach((color, i) => {
+      const hole = state.holes.find((h) => h.r === midR + 3 && h.c === midC - 4 + i);
+      if (hole) hole.color = color;
+    });
+    draw();
+  }
+
+  densityBtn.addEventListener("click", () => {
+    state.density = state.density === "coarse" ? "fine" : "coarse";
+    densityBtn.setAttribute("aria-pressed", state.density === "coarse" ? "true" : "false");
+    densityBtn.textContent = state.density === "coarse" ? "More pegs" : "Big holes";
+    state.holes.forEach((h) => { h.color = null; });
+    state.undo = [];
+    persist();
+    layout();
+  });
+
+  undoBtn.addEventListener("click", () => {
+    const last = state.undo.pop();
+    if (!last) return;
+    state.holes[last.i].color = last.prev;
+    draw();
+    persist();
+  });
+
+  clearBtn.addEventListener("click", () => {
+    if (!state.clearArmed) {
+      state.clearArmed = true;
+      clearBtn.textContent = "Sure?";
+      setTimeout(() => {
+        if (state.clearArmed) {
+          state.clearArmed = false;
+          clearBtn.textContent = "Clear";
+        }
+      }, 2200);
+      return;
+    }
+    state.clearArmed = false;
+    clearBtn.textContent = "Clear";
+    state.undo = [];
+    state.holes.forEach((h) => { h.color = null; });
+    draw();
+    persist();
+  });
+
+  saveBtn.addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.download = "peg-light.png";
+    a.href = canvas.toDataURL("image/png");
+    a.click();
+  });
+
+  const ro = new ResizeObserver(() => layout());
+  ro.observe(canvas);
+  layout();
+
+  if (saved && saved.cells) {
+    state.holes.forEach((h) => {
+      const k = h.r + "," + h.c;
+      if (saved.cells[k]) h.color = saved.cells[k];
+    });
+    draw();
+  } else if (/\bdemo=1\b/.test(location.search)) {
+    plantDemo();
+  }
+})();
+</script>
+</body>
+</html>
