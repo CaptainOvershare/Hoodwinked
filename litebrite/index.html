@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<meta name="theme-color" content="#0b0b0d">
+<meta name="theme-color" content="#0a0a0c">
 <title>OnlyPegs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --void: #070709;
-    --shell: #1a1a1e;
-    --shell-hi: #2c2c32;
-    --ink: #f3efe6;
-    --mute: #9a9488;
-    --well: #050506;
+    --void: #050506;
+    --shell: #141416;
+    --shell-hi: #2a2a2e;
+    --ink: #f4efe4;
+    --mute: #a79d8c;
+    --well: #070604;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -39,15 +39,16 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 12px;
-    padding: 10px 16px 6px;
+    padding: 12px 18px 4px;
   }
   h1 {
     margin: 0;
     font-family: Bungee, Impact, sans-serif;
-    font-size: clamp(18px, 5.4vw, 26px);
-    letter-spacing: 0.04em;
+    font-size: clamp(20px, 6vw, 28px);
+    letter-spacing: 0.06em;
     font-weight: 400;
     line-height: 1;
+    text-shadow: 0 0 18px rgba(255, 196, 90, 0.28);
   }
   .hint {
     margin: 0;
@@ -57,30 +58,81 @@
     letter-spacing: 0.02em;
   }
   .box {
-    flex: 1;
-    min-height: 0;
-    margin: 6px 12px 10px;
-    padding: 10px;
-    border-radius: 22px;
-    background:
-      linear-gradient(180deg, var(--shell-hi) 0%, var(--shell) 38%, #121214 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.10),
-      inset 0 -18px 28px rgba(0,0,0,0.35),
-      0 18px 40px rgba(0,0,0,0.45);
-    display: flex;
-    flex-direction: column;
-  }
-  .screen {
     position: relative;
     flex: 1;
     min-height: 0;
-    border-radius: 12px;
-    overflow: hidden;
-    background: #050506;
+    margin: 8px 14px 12px;
+    padding: 16px;
+    border-radius: 36px;
+    background:
+      linear-gradient(128deg,
+        #f7fafc 0%,
+        #a8b2bc 7%,
+        #eef3f7 14%,
+        #6a7380 26%,
+        #d8e0e8 38%,
+        #8e98a4 50%,
+        #f4f8fb 60%,
+        #3c4550 76%,
+        #c2ccd6 88%,
+        #707986 100%);
     box-shadow:
-      inset 0 0 0 1px rgba(255,255,255,0.04),
-      inset 0 30px 50px rgba(0,0,0,0.45);
+      inset 0 2px 1px rgba(255,255,255,0.88),
+      inset 0 -10px 18px rgba(18,22,28,0.38),
+      0 1px 0 rgba(255,255,255,0.4),
+      0 16px 34px rgba(0,0,0,0.55);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: bezel-breathe 16s ease-in-out infinite;
+  }
+  .box::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 70% at 16% 6%, rgba(255,255,255,0.72), transparent 40%),
+      linear-gradient(108deg,
+        transparent 22%,
+        rgba(255,255,255,0.4) 38%,
+        rgba(255,255,255,0.04) 46%,
+        rgba(20,24,30,0.14) 60%,
+        transparent 74%);
+    mix-blend-mode: soft-light;
+  }
+  .box::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(100deg, transparent 36%, rgba(255,255,255,0.28) 50%, transparent 62%);
+    background-size: 220% 100%;
+    animation: bezel-sheen 14s ease-in-out infinite;
+    opacity: 0.45;
+  }
+  @keyframes bezel-breathe {
+    0%, 100% { border-radius: 32px; }
+    50% { border-radius: 44px; }
+  }
+  @keyframes bezel-sheen {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .screen {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-height: 0;
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--well);
+    box-shadow:
+      inset 0 0 0 1px #050608,
+      0 0 0 1px rgba(255,255,255,0.45),
+      inset 0 24px 40px rgba(0,0,0,0.5);
   }
   canvas {
     display: block;
@@ -90,82 +142,62 @@
     cursor: crosshair;
   }
   .tray {
-    padding: 4px 12px 12px;
+    padding: 2px 14px 14px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
   .pegs {
     display: flex;
-    gap: 7px;
+    gap: 4px;
     justify-content: center;
     align-items: center;
     flex-wrap: nowrap;
   }
   .peg {
-    flex: 0 0 auto;
-    width: 34px;
-    height: 34px;
-  }
-  .peg {
     appearance: none;
     border: 0;
     padding: 0;
-    width: 34px;
-    height: 34px;
+    flex: 0 0 auto;
+    width: 27px;
+    height: 27px;
     border-radius: 50%;
     cursor: pointer;
     position: relative;
     background:
-      radial-gradient(circle at 32% 28%, rgba(255,255,255,0.85), transparent 26%),
-      radial-gradient(circle at 50% 55%, var(--peg) 0%, color-mix(in srgb, var(--peg) 70%, black) 72%, #1a1a1a 100%);
+      radial-gradient(circle at 32% 28%, rgba(255,255,255,0.92), transparent 26%),
+      radial-gradient(circle at 50% 55%, var(--peg) 0%, color-mix(in srgb, var(--peg) 68%, black) 72%, #141414 100%);
     box-shadow:
-      0 0 0 2px #0b0b0d,
-      0 6px 0 #0a0a0c,
-      0 0 16px color-mix(in srgb, var(--peg) 55%, transparent);
+      0 0 0 2px #08080a,
+      0 5px 0 #050506,
+      0 0 18px color-mix(in srgb, var(--peg) 62%, transparent);
     transition: transform .12s ease, box-shadow .12s ease;
   }
   .peg:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
   .peg[aria-pressed="true"] {
     transform: translateY(-4px) scale(1.08);
     box-shadow:
-      0 0 0 3px #f3efe6,
-      0 8px 0 #0a0a0c,
-      0 0 22px color-mix(in srgb, var(--peg) 80%, transparent);
+      0 0 0 3px #f4efe4,
+      0 8px 0 #050506,
+      0 0 26px color-mix(in srgb, var(--peg) 88%, transparent);
   }
   .peg.pull {
     background:
-      radial-gradient(circle at 50% 50%, #2a2a2e 0%, #111 70%);
-    box-shadow: 0 0 0 2px #0b0b0d, 0 6px 0 #0a0a0c;
-    color: #cfc8bb;
+      radial-gradient(circle at 50% 50%, #2c2c32 0%, #111 70%);
+    box-shadow: 0 0 0 2px #08080a, 0 5px 0 #050506;
+    color: #d4ccbe;
     font-size: 18px;
     font-weight: 800;
-    line-height: 34px;
+    line-height: 27px;
   }
-  .sheets {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-start;
-  }
-  .sheet {
-    appearance: none;
-    border: 0;
-    height: 34px;
-    padding: 0 14px;
-    border-radius: 999px;
-    background: #16161a;
-    color: var(--mute);
-    font-family: inherit;
-    font-weight: 800;
-    font-size: 13px;
-    letter-spacing: 0.02em;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
-    cursor: pointer;
-  }
-  .sheet[aria-pressed="true"] {
-    background: #2a181c;
-    color: #ffb3c8;
-    box-shadow: inset 0 0 0 1px #ff3db4;
+  .peg.ink {
+    background:
+      radial-gradient(circle at 32% 28%, rgba(220,226,232,0.55), transparent 28%),
+      radial-gradient(circle at 50% 55%, #4a4e56 0%, #1a1c20 78%, #0a0a0c 100%);
+    box-shadow:
+      0 0 0 2px #08080a,
+      0 5px 0 #050506,
+      0 0 10px rgba(160,170,180,0.18);
   }
   .tools {
     display: grid;
@@ -176,14 +208,14 @@
     appearance: none;
     border: 0;
     height: 40px;
-    border-radius: 12px;
-    background: #16161a;
+    border-radius: 14px;
+    background: #161618;
     color: var(--ink);
     font-family: inherit;
     font-weight: 800;
     font-size: 13px;
     letter-spacing: 0.02em;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);
     cursor: pointer;
   }
   .tool:active { transform: translateY(1px); }
@@ -194,11 +226,12 @@
   }
   .tool.danger:active { background: #3a1515; }
   @media (min-width: 720px) {
-    .peg { width: 46px; height: 46px; }
-    .peg.pull { line-height: 46px; }
+    .peg { width: 48px; height: 48px; }
+    .peg.pull { line-height: 48px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .peg { transition: none; }
+    .box, .box::after { animation: none; }
   }
 </style>
 </head>
@@ -216,12 +249,8 @@
 
   <div class="tray">
     <div class="pegs" role="listbox" aria-label="LED colors" id="pegsClassic"></div>
-    <div class="pegs" role="listbox" aria-label="Skin tones" id="pegsSkin"></div>
-    <div class="sheets">
-      <button class="sheet" id="sheetHeart" type="button" aria-pressed="false">Heart</button>
-    </div>
     <div class="tools">
-      <button class="tool" id="density" type="button" aria-pressed="false">Big holes</button>
+      <button class="tool" id="density" type="button" aria-pressed="false">Big pegs</button>
       <button class="tool" id="undo" type="button">Undo</button>
       <button class="tool" id="save" type="button">Save</button>
       <button class="tool danger" id="clear" type="button">Clear</button>
@@ -231,40 +260,30 @@
 <script>
 (function () {
   const COLORS = [
-    { id: "red",     hex: "#ff1f1f", group: "lite" },
-    { id: "orange",  hex: "#ff7a00", group: "lite" },
-    { id: "yellow",  hex: "#ffe600", group: "lite" },
-    { id: "green",   hex: "#3dff4a", group: "lite" },
-    { id: "cyan",    hex: "#1ee7ff", group: "lite" },
-    { id: "blue",    hex: "#2f6bff", group: "lite" },
-    { id: "violet",  hex: "#b44dff", group: "lite" },
-    { id: "hot",     hex: "#ff3db4", group: "lite" },
-    { id: "white",   hex: "#f7f7ff", group: "lite" },
-    { id: "fair",    hex: "#F6D7C8", group: "skin" },
-    { id: "light",   hex: "#E3CDB5", group: "skin" },
-    { id: "gold",    hex: "#D1A58D", group: "skin" },
-    { id: "tan",     hex: "#C5917A", group: "skin" },
-    { id: "flush",   hex: "#BC7868", group: "skin" },
-    { id: "brown",   hex: "#8E6B59", group: "skin" },
-    { id: "deep",    hex: "#5C3F34", group: "skin" },
-    { id: "darkest", hex: "#3E2321", group: "skin" }
+    { id: "red",    hex: "#ff1a14" },
+    { id: "orange", hex: "#ff7a00" },
+    { id: "yellow", hex: "#ffe014" },
+    { id: "green",  hex: "#2dff3c" },
+    { id: "cyan",   hex: "#14e8ff" },
+    { id: "blue",   hex: "#2f6bff" },
+    { id: "violet", hex: "#b44dff" },
+    { id: "hot",    hex: "#ff2fb0" },
+    { id: "white",  hex: "#f6f7ff" },
+    { id: "black",  hex: "#3c4148" }
   ];
   const STORE = "hoodwinked.peglight.v1";
   const canvas = document.getElementById("board");
   const ctx = canvas.getContext("2d");
   const pegsClassic = document.getElementById("pegsClassic");
-  const pegsSkin = document.getElementById("pegsSkin");
   const hint = document.getElementById("hint");
   const densityBtn = document.getElementById("density");
   const undoBtn = document.getElementById("undo");
   const saveBtn = document.getElementById("save");
   const clearBtn = document.getElementById("clear");
-  const heartBtn = document.getElementById("sheetHeart");
 
   const state = {
     color: "red",
     density: "fine",
-    sheet: null,
     holes: [],
     cols: 0,
     rows: 0,
@@ -273,18 +292,14 @@
     undo: [],
     painting: false,
     lastIndex: -1,
-    clearArmed: false
+    clearArmed: false,
+    dragArmed: false,
+    downX: 0,
+    downY: 0
   };
 
   function resolveColor(id) {
-    const alias = {
-      pink: "hot",
-      ballet: "fair",
-      blush: "flush",
-      magenta: "hot",
-      rose: "flush",
-      berry: "brown"
-    };
+    const alias = { pink: "hot", magenta: "hot", grey: "black", gray: "black", charcoal: "black", graphite: "black" };
     if (alias[id]) id = alias[id];
     return COLORS.find((c) => c.id === id) || null;
   }
@@ -295,14 +310,14 @@
     b.type = "button";
     b.style.setProperty("--peg", c.hex);
     b.dataset.id = c.id;
+    if (c.id === "black") b.classList.add("ink");
     b.setAttribute("role", "option");
     b.setAttribute("aria-label", c.id);
     b.setAttribute("aria-pressed", c.id === state.color ? "true" : "false");
     b.addEventListener("click", () => selectColor(c.id));
     parent.appendChild(b);
   }
-  COLORS.filter((c) => c.group === "lite").forEach((c) => addPeg(c, pegsClassic));
-  COLORS.filter((c) => c.group === "skin").forEach((c) => addPeg(c, pegsSkin));
+  COLORS.forEach((c) => addPeg(c, pegsClassic));
   const pull = document.createElement("button");
   pull.className = "peg pull";
   pull.type = "button";
@@ -319,8 +334,8 @@
     state.clearArmed = false;
     clearBtn.textContent = "Clear";
     hint.textContent = state.color
-      ? (state.sheet ? "Hint is dull. Punch any color." : "Tap holes to plant " + state.color + " pegs.")
-      : (state.sheet ? "Pull a peg. The hint stays." : "Tap a peg to pull it.");
+      ? "Tap holes to plant " + state.color + " pegs."
+      : "Tap a peg to pull it.";
     document.querySelectorAll(".peg").forEach((el) => {
       const isOn = (state.color === null && el.dataset.id === "pull") || el.dataset.id === state.color;
       el.setAttribute("aria-pressed", isOn ? "true" : "false");
@@ -371,8 +386,7 @@
           r, c,
           x: x0 + c * pitch,
           y: oy + r * rowPitch,
-          color: prev.get(r + "," + c) || null,
-          ghost: null
+          color: prev.get(r + "," + c) || null
         });
       }
     }
@@ -381,40 +395,7 @@
     state.rows = rows;
     state.radius = radius;
     state.pitch = pitch;
-    stampSheet();
     draw();
-  }
-
-  function insideHeart(x, y) {
-    const a = x * x + y * y - 1;
-    return a * a * a - x * x * y * y * y <= 0;
-  }
-
-  function heartHintColor(x, y) {
-    const leftLobe = Math.hypot(x + 0.40, y - 0.55);
-    const rightLobe = Math.hypot(x - 0.40, y - 0.55);
-    if (y > 0.58 && leftLobe < 0.11) return "white";
-    if (y > 0.28 && (leftLobe < 0.24 || rightLobe < 0.24)) return "hot";
-    return "red";
-  }
-
-  function stampSheet() {
-    for (const hole of state.holes) hole.ghost = null;
-    if (state.sheet !== "heart") return;
-    const box = canvas.getBoundingClientRect();
-    const cx = box.width / 2;
-    const cy = box.height * 0.46;
-    const scale = Math.min(box.width, box.height) * 0.22;
-    if (scale < 8) return;
-    for (const hole of state.holes) {
-      const x = (hole.x - cx) / scale;
-      const y = (cy - hole.y) / scale;
-      if (insideHeart(x, y)) hole.ghost = heartHintColor(x, y);
-    }
-  }
-
-  function syncSheetBtn() {
-    heartBtn.setAttribute("aria-pressed", state.sheet === "heart" ? "true" : "false");
   }
 
   function drawHole(h) {
@@ -422,29 +403,12 @@
     const rad = state.radius;
     if (!h.color) {
       ctx.beginPath();
-      ctx.fillStyle = "#030304";
+      ctx.fillStyle = "#100c08";
       ctx.arc(x, y, rad, 0, Math.PI * 2);
       ctx.fill();
-      if (h.ghost) {
-        const spec = resolveColor(h.ghost);
-        if (!spec) return;
-        const rgb = hexToRgb(spec.hex);
-        const glow = ctx.createRadialGradient(x, y, 0, x, y, rad * 1.15);
-        glow.addColorStop(0, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0.28)");
-        glow.addColorStop(1, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0)");
-        ctx.beginPath();
-        ctx.fillStyle = glow;
-        ctx.arc(x, y, rad * 1.15, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.fillStyle = "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0.34)";
-        ctx.arc(x, y, rad * 0.72, 0, Math.PI * 2);
-        ctx.fill();
-        return;
-      }
       const leak = ctx.createRadialGradient(x, y, 0, x, y, rad);
-      leak.addColorStop(0, "rgba(255, 214, 140, 0.22)");
-      leak.addColorStop(0.45, "rgba(255, 170, 70, 0.06)");
+      leak.addColorStop(0, "rgba(255, 220, 150, 0.38)");
+      leak.addColorStop(0.42, "rgba(255, 176, 70, 0.12)");
       leak.addColorStop(1, "rgba(0,0,0,0)");
       ctx.beginPath();
       ctx.fillStyle = leak;
@@ -455,24 +419,33 @@
     const spec = resolveColor(h.color);
     if (!spec) return;
     const rgb = hexToRgb(spec.hex);
-    const skin = spec.group === "skin";
-    const glowR = skin ? rad * 1.55 : rad * 2.25;
-    const glow = ctx.createRadialGradient(x, y, rad * 0.15, x, y, glowR);
-    glow.addColorStop(0, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + "," + (skin ? "0.72" : "0.98") + ")");
-    glow.addColorStop(0.4, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + "," + (skin ? "0.22" : "0.38") + ")");
+    if (spec.id === "black") {
+      const plug = ctx.createRadialGradient(x - rad * 0.28, y - rad * 0.32, rad * 0.08, x, y, rad);
+      plug.addColorStop(0, "rgba(170,178,188,0.7)");
+      plug.addColorStop(0.22, "rgba(70,76,84,1)");
+      plug.addColorStop(0.72, "rgba(28,30,34,1)");
+      plug.addColorStop(1, "rgba(8,8,10,1)");
+      ctx.beginPath();
+      ctx.fillStyle = plug;
+      ctx.arc(x, y, rad, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+    const glowR = rad * 2.45;
+    const glow = ctx.createRadialGradient(x, y, rad * 0.12, x, y, glowR);
+    glow.addColorStop(0, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",1)");
+    glow.addColorStop(0.36, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0.46)");
     glow.addColorStop(1, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0)");
     ctx.beginPath();
     ctx.fillStyle = glow;
     ctx.arc(x, y, glowR, 0, Math.PI * 2);
     ctx.fill();
 
-    const hi = skin ? "rgba(255,236,220,0.72)" : "rgba(255,255,255,0.95)";
-    const shade = skin ? 0.72 : 0.55;
-    const body = ctx.createRadialGradient(x - rad * 0.28, y - rad * 0.32, rad * 0.1, x, y, rad);
-    body.addColorStop(0, hi);
-    body.addColorStop(0.22, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",1)");
-    body.addColorStop(0.78, "rgba(" + Math.round(rgb.r * shade) + "," + Math.round(rgb.g * shade) + "," + Math.round(rgb.b * shade) + ",1)");
-    body.addColorStop(1, skin ? "rgba(40,24,18,0.88)" : "rgba(20,16,12,0.95)");
+    const body = ctx.createRadialGradient(x - rad * 0.28, y - rad * 0.32, rad * 0.08, x, y, rad);
+    body.addColorStop(0, "rgba(255,255,255,0.98)");
+    body.addColorStop(0.2, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",1)");
+    body.addColorStop(0.76, "rgba(" + Math.round(rgb.r * 0.52) + "," + Math.round(rgb.g * 0.52) + "," + Math.round(rgb.b * 0.52) + ",1)");
+    body.addColorStop(1, "rgba(16,12,10,0.95)");
     ctx.beginPath();
     ctx.fillStyle = body;
     ctx.arc(x, y, rad, 0, Math.PI * 2);
@@ -483,23 +456,22 @@
     const w = canvas.getBoundingClientRect().width;
     const h = canvas.getBoundingClientRect().height;
     ctx.clearRect(0, 0, w, h);
-    const back = ctx.createRadialGradient(w * 0.5, h * 0.42, 20, w * 0.5, h * 0.5, Math.max(w, h) * 0.72);
-    back.addColorStop(0, "#1a140c");
-    back.addColorStop(0.55, "#0b0a08");
-    back.addColorStop(1, "#050506");
+    const back = ctx.createRadialGradient(w * 0.5, h * 0.4, 16, w * 0.5, h * 0.52, Math.max(w, h) * 0.74);
+    back.addColorStop(0, "#2a1c0c");
+    back.addColorStop(0.42, "#120e08");
+    back.addColorStop(1, "#070604");
     ctx.fillStyle = back;
     ctx.fillRect(0, 0, w, h);
     for (const hole of state.holes) drawHole(hole);
   }
 
   function nearest(px, py) {
-    let best = -1;
-    let bestD = state.radius * 1.35;
+    if (!state.holes.length) return -1;
+    let best = 0;
+    let bestD = Infinity;
     for (let i = 0; i < state.holes.length; i++) {
-      const h = state.holes[i];
-      const dx = h.x - px;
-      const dy = h.y - py;
-      const d = Math.hypot(dx, dy);
+      const hole = state.holes[i];
+      const d = Math.hypot(hole.x - px, hole.y - py);
       if (d < bestD) {
         bestD = d;
         best = i;
@@ -516,7 +488,7 @@
     state.undo.push({ i: index, prev: hole.color });
     if (state.undo.length > 400) state.undo.shift();
     hole.color = next;
-    drawHole(hole);
+    draw();
     persist();
   }
 
@@ -528,9 +500,14 @@
 
   function down(e) {
     e.preventDefault();
+    if (canvas.setPointerCapture && e.pointerId != null) {
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    }
     state.painting = true;
-    state.lastIndex = -1;
+    state.dragArmed = false;
     const p = pointerPos(e);
+    state.downX = p.x;
+    state.downY = p.y;
     const i = nearest(p.x, p.y);
     state.lastIndex = i;
     apply(i);
@@ -539,13 +516,17 @@
     if (!state.painting) return;
     e.preventDefault();
     const p = pointerPos(e);
+    if (!state.dragArmed) {
+      if (Math.hypot(p.x - state.downX, p.y - state.downY) < Math.max(10, state.pitch * 0.45)) return;
+      state.dragArmed = true;
+    }
     const i = nearest(p.x, p.y);
     if (i !== state.lastIndex) {
       state.lastIndex = i;
       apply(i);
     }
   }
-  function up() { state.painting = false; }
+  function up() { state.painting = false; state.dragArmed = false; }
 
   canvas.addEventListener("pointerdown", down);
   canvas.addEventListener("pointermove", move);
@@ -555,12 +536,11 @@
   function persist() {
     const cells = {};
     state.holes.forEach((h) => {
-      if (h.color) cells[h.r + "," + h.c] = h.color;
+      if (h.color && resolveColor(h.color)) cells[h.r + "," + h.c] = h.color;
     });
     localStorage.setItem(STORE, JSON.stringify({
       density: state.density,
       color: state.color,
-      sheet: state.sheet,
       cells
     }));
   }
@@ -578,38 +558,22 @@
   const saved = restore();
   if (saved) {
     if (saved.density === "coarse" || saved.density === "fine") state.density = saved.density;
-    if (saved.sheet === "heart") state.sheet = "heart";
     if (saved.color === null || COLORS.some((c) => c.id === saved.color)) selectColor(saved.color);
   }
-  syncSheetBtn();
   densityBtn.setAttribute("aria-pressed", state.density === "coarse" ? "true" : "false");
-  densityBtn.textContent = state.density === "coarse" ? "More pegs" : "Big holes";
-
-  if (/\bsheet=heart\b/.test(location.search)) {
-    state.sheet = "heart";
-    syncSheetBtn();
-    selectColor(state.color);
-  }
+  densityBtn.textContent = state.density === "coarse" ? "Little pegs" : "Big pegs";
 
   function plantDemo() {
     const midR = Math.floor(state.rows / 2);
     const midC = Math.floor(state.cols / 2);
-    const heart = [
-      [-6,-3,"red"],[-6,-2,"hot"],[-6,1,"hot"],[-6,2,"red"],
-      [-5,-4,"orange"],[-5,-1,"yellow"],[-5,0,"yellow"],[-5,3,"orange"],
-      [-4,-4,"green"],[-4,0,"cyan"],[-4,3,"green"],
-      [-3,-3,"blue"],[-3,2,"blue"],
-      [-2,-2,"violet"],[-2,1,"violet"],
-      [-1,-1,"white"],[-1,0,"white"]
-    ];
-    const skin = ["fair","light","gold","tan","flush","brown","deep","darkest"];
-    heart.forEach(([dr, dc, color]) => {
-      const hole = state.holes.find((h) => h.r === midR + dr && h.c === midC + dc);
-      if (hole) hole.color = color;
+    const start = midC - Math.floor(COLORS.length / 2);
+    COLORS.forEach((c, i) => {
+      const hole = state.holes.find((h) => h.r === midR && h.c === start + i);
+      if (hole) hole.color = c.id;
     });
-    skin.forEach((color, i) => {
-      const hole = state.holes.find((h) => h.r === midR + 3 && h.c === midC - 4 + i);
-      if (hole) hole.color = color;
+    COLORS.forEach((c, i) => {
+      const hole = state.holes.find((h) => h.r === midR + 2 && h.c === start + i);
+      if (hole) hole.color = c.id;
     });
     draw();
   }
@@ -617,22 +581,11 @@
   densityBtn.addEventListener("click", () => {
     state.density = state.density === "coarse" ? "fine" : "coarse";
     densityBtn.setAttribute("aria-pressed", state.density === "coarse" ? "true" : "false");
-    densityBtn.textContent = state.density === "coarse" ? "More pegs" : "Big holes";
+    densityBtn.textContent = state.density === "coarse" ? "Little pegs" : "Big pegs";
     state.holes.forEach((h) => { h.color = null; });
     state.undo = [];
     persist();
     layout();
-  });
-
-  heartBtn.addEventListener("click", () => {
-    state.sheet = state.sheet === "heart" ? null : "heart";
-    state.clearArmed = false;
-    clearBtn.textContent = "Clear";
-    syncSheetBtn();
-    stampSheet();
-    selectColor(state.color);
-    draw();
-    persist();
   });
 
   undoBtn.addEventListener("click", () => {
@@ -646,7 +599,7 @@
   clearBtn.addEventListener("click", () => {
     if (!state.clearArmed) {
       state.clearArmed = true;
-      clearBtn.textContent = "Sure?";
+      clearBtn.textContent = "You sure?";
       setTimeout(() => {
         if (state.clearArmed) {
           state.clearArmed = false;
@@ -673,11 +626,14 @@
   const ro = new ResizeObserver(() => layout());
   ro.observe(canvas);
   layout();
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => layout());
+  }
 
   if (saved && saved.cells) {
     state.holes.forEach((h) => {
       const k = h.r + "," + h.c;
-      if (saved.cells[k]) h.color = saved.cells[k];
+      if (saved.cells[k] && resolveColor(saved.cells[k])) h.color = saved.cells[k];
     });
     draw();
   } else if (/\bdemo=1\b/.test(location.search)) {
