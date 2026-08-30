@@ -144,6 +144,28 @@
     touch-action: none;
     cursor: crosshair;
   }
+  .zoom-tools {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .zoom-tools button {
+    appearance: none;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 10px;
+    background: rgba(8, 8, 10, 0.55);
+    color: #f4efe4;
+    font: 800 20px/1 Nunito, ui-rounded, system-ui, sans-serif;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
+    cursor: pointer;
+  }
+  .zoom-tools button:active { background: rgba(8, 8, 10, 0.8); }
   .tray {
     padding: 2px 14px 14px;
     display: flex;
@@ -247,6 +269,10 @@
   <div class="box">
     <div class="screen">
       <canvas id="board" width="720" height="960" aria-label="Light pegboard"></canvas>
+      <div class="zoom-tools">
+        <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
+        <button type="button" id="zoomOut" aria-label="Zoom out">−</button>
+      </div>
     </div>
   </div>
 
@@ -296,10 +322,23 @@
     painting: false,
     lastIndex: -1,
     clearArmed: false,
+    densityArmed: false,
     dragArmed: false,
     downX: 0,
-    downY: 0
+    downY: 0,
+    viewW: 1,
+    viewH: 1,
+    dpr: 1,
+    zoom: 1,
+    panX: 0,
+    panY: 0,
+    pinching: false,
+    pinch: null,
+    suppressPaint: false
   };
+  const pointers = new Map();
+  const MIN_ZOOM = 1;
+  const MAX_ZOOM = 3.75;
 
   function resolveColor(id) {
     const alias = { pink: "hot", magenta: "hot", grey: "black", gray: "black", charcoal: "black", graphite: "black" };
@@ -331,11 +370,25 @@
   pull.addEventListener("click", () => selectColor(null));
   pegsClassic.appendChild(pull);
 
+  function densityLabel() {
+    return state.density === "coarse" ? "Little pegs" : "Big pegs";
+  }
+
+  function disarmConfirms() {
+    state.clearArmed = false;
+    state.densityArmed = false;
+    clearBtn.textContent = "Clear";
+    densityBtn.textContent = densityLabel();
+  }
+
+  function hasArt() {
+    return state.holes.some((h) => h.color);
+  }
+
   function selectColor(id) {
     const spec = id === null ? null : resolveColor(id);
     state.color = spec ? spec.id : null;
-    state.clearArmed = false;
-    clearBtn.textContent = "Clear";
+    disarmConfirms();
     hint.textContent = state.color === null
       ? "Pull a peg."
       : state.color === "black"
@@ -360,6 +413,9 @@
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    state.viewW = cssW;
+    state.viewH = cssH;
+    state.dpr = dpr;
 
     const coarse = state.density === "coarse";
     const pad = coarse ? 14 : 10;
@@ -400,6 +456,7 @@
     state.rows = rows;
     state.radius = radius;
     state.pitch = pitch;
+    clampCamera();
     draw();
   }
 
@@ -457,16 +514,73 @@
     ctx.fill();
   }
 
+  function clampCamera() {
+    const z = state.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, state.zoom));
+    const w = state.viewW;
+    const h = state.viewH;
+    if (z <= 1.001) {
+      state.zoom = 1;
+      state.panX = 0;
+      state.panY = 0;
+      return;
+    }
+    state.panX = Math.min(0, Math.max(w * (1 - z), state.panX));
+    state.panY = Math.min(0, Math.max(h * (1 - z), state.panY));
+  }
+
+  function zoomAt(sx, sy, nextZ) {
+    const z0 = state.zoom || 1;
+    const z1 = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZ));
+    state.panX = sx - (sx - state.panX) * (z1 / z0);
+    state.panY = sy - (sy - state.panY) * (z1 / z0);
+    state.zoom = z1;
+    clampCamera();
+    draw();
+  }
+
+  function resetCamera() {
+    state.zoom = 1;
+    state.panX = 0;
+    state.panY = 0;
+  }
+
+  function worldFromScreen(p) {
+    return {
+      x: (p.x - state.panX) / state.zoom,
+      y: (p.y - state.panY) / state.zoom
+    };
+  }
+
+  function livePinch() {
+    const pts = Array.from(pointers.values());
+    if (pts.length < 2) return null;
+    return {
+      cx: (pts[0].x + pts[1].x) / 2,
+      cy: (pts[0].y + pts[1].y) / 2,
+      dist: Math.max(1, Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y))
+    };
+  }
+
   function draw() {
-    const w = canvas.getBoundingClientRect().width;
-    const h = canvas.getBoundingClientRect().height;
+    const w = state.viewW;
+    const h = state.viewH;
+    ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    const back = ctx.createRadialGradient(w * 0.5, h * 0.4, 16, w * 0.5, h * 0.52, Math.max(w, h) * 0.74);
+    ctx.translate(state.panX, state.panY);
+    ctx.scale(state.zoom, state.zoom);
+    const x0 = -state.panX / state.zoom;
+    const y0 = -state.panY / state.zoom;
+    const bw = w / state.zoom;
+    const bh = h / state.zoom;
+    const back = ctx.createRadialGradient(
+      x0 + bw * 0.5, y0 + bh * 0.4, 16,
+      x0 + bw * 0.5, y0 + bh * 0.52, Math.max(bw, bh) * 0.74
+    );
     back.addColorStop(0, "#2a1c0c");
     back.addColorStop(0.42, "#120e08");
     back.addColorStop(1, "#070604");
     ctx.fillStyle = back;
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillRect(x0, y0, bw, bh);
     for (const hole of state.holes) drawHole(hole);
   }
 
@@ -505,24 +619,63 @@
 
   function down(e) {
     e.preventDefault();
+    const p = pointerPos(e);
+    if (e.pointerId != null) pointers.set(e.pointerId, p);
     if (canvas.setPointerCapture && e.pointerId != null) {
       try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
     }
+    if (pointers.size >= 2) {
+      if (state.painting && !state.dragArmed) {
+        const last = state.undo.pop();
+        if (last) {
+          state.holes[last.i].color = last.prev;
+          persist();
+        }
+      }
+      state.painting = false;
+      state.dragArmed = false;
+      state.pinching = true;
+      const live = livePinch();
+      state.pinch = live
+        ? { zoom: state.zoom, panX: state.panX, panY: state.panY, cx: live.cx, cy: live.cy, dist: live.dist }
+        : null;
+      draw();
+      return;
+    }
+    if (state.suppressPaint || state.pinching) return;
     state.painting = true;
     state.dragArmed = false;
-    const p = pointerPos(e);
-    state.downX = p.x;
-    state.downY = p.y;
-    const i = nearest(p.x, p.y);
+    const wpos = worldFromScreen(p);
+    state.downX = wpos.x;
+    state.downY = wpos.y;
+    const i = nearest(wpos.x, wpos.y);
     state.lastIndex = i;
     apply(i);
   }
   function move(e) {
+    if (e.pointerId != null && pointers.has(e.pointerId)) {
+      pointers.set(e.pointerId, pointerPos(e));
+    }
+    if (state.pinching) {
+      e.preventDefault();
+      const live = livePinch();
+      const start = state.pinch;
+      if (!live || !start) return;
+      const z = start.zoom * (live.dist / start.dist);
+      const worldX = (start.cx - start.panX) / start.zoom;
+      const worldY = (start.cy - start.panY) / start.zoom;
+      state.zoom = z;
+      state.panX = live.cx - worldX * z;
+      state.panY = live.cy - worldY * z;
+      clampCamera();
+      draw();
+      return;
+    }
     if (!state.painting) return;
     e.preventDefault();
-    const p = pointerPos(e);
+    const p = worldFromScreen(pointerPos(e));
     if (!state.dragArmed) {
-      if (Math.hypot(p.x - state.downX, p.y - state.downY) < Math.max(10, state.pitch * 0.45)) return;
+      if (Math.hypot(p.x - state.downX, p.y - state.downY) < Math.max(10 / state.zoom, state.pitch * 0.45)) return;
       state.dragArmed = true;
     }
     const i = nearest(p.x, p.y);
@@ -531,7 +684,22 @@
       apply(i);
     }
   }
-  function up() { state.painting = false; state.dragArmed = false; }
+  function up(e) {
+    if (e && e.pointerId != null) pointers.delete(e.pointerId);
+    else pointers.clear();
+    if (state.pinching && pointers.size < 2) {
+      state.pinching = false;
+      state.pinch = null;
+      state.suppressPaint = pointers.size > 0;
+    }
+    if (pointers.size === 0) {
+      state.suppressPaint = false;
+      state.pinching = false;
+      state.pinch = null;
+    }
+    state.painting = false;
+    state.dragArmed = false;
+  }
 
   canvas.addEventListener("pointerdown", down);
   canvas.addEventListener("pointermove", move);
@@ -584,11 +752,26 @@
   }
 
   densityBtn.addEventListener("click", () => {
+    state.clearArmed = false;
+    clearBtn.textContent = "Clear";
+    if (hasArt() && !state.densityArmed) {
+      state.densityArmed = true;
+      densityBtn.textContent = "You sure?";
+      setTimeout(() => {
+        if (state.densityArmed) {
+          state.densityArmed = false;
+          densityBtn.textContent = densityLabel();
+        }
+      }, 2200);
+      return;
+    }
+    state.densityArmed = false;
     state.density = state.density === "coarse" ? "fine" : "coarse";
     densityBtn.setAttribute("aria-pressed", state.density === "coarse" ? "true" : "false");
-    densityBtn.textContent = state.density === "coarse" ? "Little pegs" : "Big pegs";
+    densityBtn.textContent = densityLabel();
     state.holes.forEach((h) => { h.color = null; });
     state.undo = [];
+    resetCamera();
     persist();
     layout();
   });
@@ -602,6 +785,8 @@
   });
 
   clearBtn.addEventListener("click", () => {
+    state.densityArmed = false;
+    densityBtn.textContent = densityLabel();
     if (!state.clearArmed) {
       state.clearArmed = true;
       clearBtn.textContent = "You sure?";
@@ -622,11 +807,33 @@
   });
 
   saveBtn.addEventListener("click", () => {
+    const z = state.zoom;
+    const x = state.panX;
+    const y = state.panY;
+    resetCamera();
+    draw();
     const a = document.createElement("a");
     a.download = "lit.png";
     a.href = canvas.toDataURL("image/png");
     a.click();
+    state.zoom = z;
+    state.panX = x;
+    state.panY = y;
+    clampCamera();
+    draw();
   });
+
+  document.getElementById("zoomIn").addEventListener("click", () => {
+    zoomAt(state.viewW / 2, state.viewH / 2, state.zoom * 1.28);
+  });
+  document.getElementById("zoomOut").addEventListener("click", () => {
+    zoomAt(state.viewW / 2, state.viewH / 2, state.zoom / 1.28);
+  });
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const p = pointerPos(e);
+    zoomAt(p.x, p.y, state.zoom * Math.exp(-e.deltaY * 0.0015));
+  }, { passive: false });
 
   const ro = new ResizeObserver(() => layout());
   ro.observe(canvas);
