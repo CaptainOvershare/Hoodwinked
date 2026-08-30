@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="theme-color" content="#0a0a0c">
-<title>OnlyPegs</title>
+<title>LIT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -48,8 +48,11 @@
     letter-spacing: 0.06em;
     font-weight: 400;
     line-height: 1;
-    text-shadow: 0 0 18px rgba(255, 196, 90, 0.28);
   }
+  h1 span { display: inline-block; }
+  h1 .l { color: #14e8ff; text-shadow: 0 0 16px rgba(20, 232, 255, 0.7); }
+  h1 .i { color: #ff2fb0; text-shadow: 0 0 16px rgba(255, 47, 176, 0.7); }
+  h1 .t { color: #ffe014; text-shadow: 0 0 16px rgba(255, 224, 20, 0.7); }
   .hint {
     margin: 0;
     color: var(--mute);
@@ -237,8 +240,8 @@
 </head>
 <body>
   <header>
-    <h1>OnlyPegs</h1>
-    <p class="hint" id="hint">Pick a color. Tap the holes.</p>
+    <h1 aria-label="LIT"><span class="l">L</span><span class="i">I</span><span class="t">T</span></h1>
+    <p class="hint" id="hint">Light it red.</p>
   </header>
 
   <div class="box">
@@ -333,9 +336,11 @@
     state.color = spec ? spec.id : null;
     state.clearArmed = false;
     clearBtn.textContent = "Clear";
-    hint.textContent = state.color
-      ? "Tap holes to plant " + state.color + " pegs."
-      : "Tap a peg to pull it.";
+    hint.textContent = state.color === null
+      ? "Pull a peg."
+      : state.color === "black"
+        ? "Plug a hole."
+        : "Light it " + state.color + ".";
     document.querySelectorAll(".peg").forEach((el) => {
       const isOn = (state.color === null && el.dataset.id === "pull") || el.dataset.id === state.color;
       el.setAttribute("aria-pressed", isOn ? "true" : "false");
@@ -618,7 +623,7 @@
 
   saveBtn.addEventListener("click", () => {
     const a = document.createElement("a");
-    a.download = "onlypegs.png";
+    a.download = "lit.png";
     a.href = canvas.toDataURL("image/png");
     a.click();
   });
