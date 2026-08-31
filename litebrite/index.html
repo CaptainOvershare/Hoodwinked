@@ -59,6 +59,7 @@
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.02em;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.85);
   }
   .box {
     position: relative;
@@ -263,7 +264,7 @@
 <body>
   <header>
     <h1 aria-label="LIT"><span class="l">L</span><span class="i">I</span><span class="t">T</span></h1>
-    <p class="hint" id="hint">Light it red.</p>
+    <p class="hint" id="hint">Lite it red</p>
   </header>
 
   <div class="box">
@@ -354,7 +355,7 @@
     b.dataset.id = c.id;
     if (c.id === "black") b.classList.add("ink");
     b.setAttribute("role", "option");
-    b.setAttribute("aria-label", c.id);
+    b.setAttribute("aria-label", c.id === "hot" ? "magenta" : c.id);
     b.setAttribute("aria-pressed", c.id === state.color ? "true" : "false");
     b.addEventListener("click", () => selectColor(c.id));
     parent.appendChild(b);
@@ -389,11 +390,17 @@
     const spec = id === null ? null : resolveColor(id);
     state.color = spec ? spec.id : null;
     disarmConfirms();
-    hint.textContent = state.color === null
-      ? "Pull a peg."
-      : state.color === "black"
-        ? "Plug a hole."
-        : "Light it " + state.color + ".";
+    if (state.color === null) {
+      hint.textContent = "Pull a peg";
+      hint.style.color = "";
+    } else if (state.color === "black") {
+      hint.textContent = "Plug a hole";
+      hint.style.color = "#f6f7ff";
+    } else {
+      const name = state.color === "hot" ? "magenta" : state.color;
+      hint.textContent = "Lite it " + name;
+      hint.style.color = state.color === "white" ? "#f6f7ff" : spec.hex;
+    }
     document.querySelectorAll(".peg").forEach((el) => {
       const isOn = (state.color === null && el.dataset.id === "pull") || el.dataset.id === state.color;
       el.setAttribute("aria-pressed", isOn ? "true" : "false");
@@ -604,6 +611,7 @@
     const hole = state.holes[index];
     const next = state.color;
     if (hole.color === next) return;
+    if (next !== null && hole.color) return;
     state.undo.push({ i: index, prev: hole.color });
     if (state.undo.length > 400) state.undo.shift();
     hole.color = next;
@@ -732,6 +740,8 @@
   if (saved) {
     if (saved.density === "coarse" || saved.density === "fine") state.density = saved.density;
     if (saved.color === null || COLORS.some((c) => c.id === saved.color)) selectColor(saved.color);
+  } else {
+    selectColor(state.color);
   }
   densityBtn.setAttribute("aria-pressed", state.density === "coarse" ? "true" : "false");
   densityBtn.textContent = state.density === "coarse" ? "Little pegs" : "Big pegs";
