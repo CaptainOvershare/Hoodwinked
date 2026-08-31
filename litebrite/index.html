@@ -48,6 +48,7 @@
     letter-spacing: 0.06em;
     font-weight: 400;
     line-height: 1;
+    cursor: pointer;
   }
   h1 span { display: inline-block; }
   h1 .l { color: #14e8ff; text-shadow: 0 0 16px rgba(20, 232, 255, 0.7); }
@@ -167,6 +168,44 @@
     cursor: pointer;
   }
   .zoom-tools button:active { background: rgba(8, 8, 10, 0.8); }
+  .share {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(5, 5, 6, 0.72);
+  }
+  .share.on { display: flex; }
+  .share-card {
+    width: min(72vw, 260px);
+    background: #f4efe4;
+    color: #120e08;
+    border-radius: 18px;
+    padding: 16px 16px 14px;
+    text-align: center;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+  }
+  .share-card p {
+    margin: 0;
+    font-weight: 800;
+    font-size: 15px;
+  }
+  .share-card span {
+    display: block;
+    margin: 4px 0 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #6a6256;
+  }
+  .share-card svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
   .tray {
     padding: 2px 14px 14px;
     display: flex;
@@ -208,13 +247,23 @@
       0 0 26px color-mix(in srgb, var(--peg) 88%, transparent);
   }
   .peg.pull {
+    color: transparent;
+    font-size: 0;
+    line-height: 0;
     background:
-      radial-gradient(circle at 50% 50%, #2c2c32 0%, #111 70%);
-    box-shadow: 0 0 0 2px #08080a, 0 5px 0 #050506;
-    color: #d4ccbe;
-    font-size: 18px;
-    font-weight: 800;
-    line-height: 27px;
+      radial-gradient(circle at 50% 50%, rgba(255, 220, 150, 0.55) 0%, rgba(255, 176, 70, 0.16) 36%, rgba(16, 12, 8, 0) 68%),
+      #100c08;
+    box-shadow:
+      0 0 0 2px #08080a,
+      0 5px 0 #050506,
+      inset 0 0 7px rgba(0, 0, 0, 0.5);
+  }
+  .peg.pull[aria-pressed="true"] {
+    box-shadow:
+      0 0 0 3px #f4efe4,
+      0 8px 0 #050506,
+      inset 0 0 7px rgba(0, 0, 0, 0.5),
+      0 0 18px rgba(255, 196, 90, 0.32);
   }
   .peg.ink {
     background:
@@ -253,7 +302,6 @@
   .tool.danger:active { background: #3a1515; }
   @media (min-width: 720px) {
     .peg { width: 48px; height: 48px; }
-    .peg.pull { line-height: 48px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .peg { transition: none; }
@@ -263,7 +311,7 @@
 </head>
 <body>
   <header>
-    <h1 aria-label="LIT"><span class="l">L</span><span class="i">I</span><span class="t">T</span></h1>
+    <h1 id="wordmark" aria-label="LIT" role="button" tabindex="0" aria-expanded="false" aria-controls="share"><span class="l">L</span><span class="i">I</span><span class="t">T</span></h1>
     <p class="hint" id="hint">Lite it red</p>
   </header>
 
@@ -273,6 +321,13 @@
       <div class="zoom-tools">
         <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
         <button type="button" id="zoomOut" aria-label="Zoom out">−</button>
+      </div>
+      <div class="share" id="share" aria-hidden="true">
+        <div class="share-card">
+          <p>Got a friend nearby?</p>
+          <span>Scan to play LIT</span>
+          <svg viewBox="0 0 37 37" role="img" aria-label="QR code linking to LIT"><title>Play LIT</title><path fill="#f4efe4" d="M0 0h37v37h-37z"/><path fill="none" stroke="#120e08" stroke-width="1" d="M2 2.5h7m3 0h1m1 0h1m1 0h1m1 0h6m1 0h1m2 0h7m-33 1h1m5 0h1m4 0h1m3 0h1m2 0h1m2 0h2m3 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m1 0h3m3 0h2m5 0h1m2 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h3m6 0h1m1 0h1m4 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h1m1 0h1m3 0h3m2 0h2m2 0h1m2 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m1 0h1m1 0h1m3 0h1m3 0h1m2 0h1m4 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-25 1h2m1 0h2m1 0h1m1 0h1m2 0h1m1 0h2m-23 1h1m1 0h5m6 0h2m2 0h1m4 0h1m1 0h1m1 0h5m-31 1h6m5 0h3m2 0h1m2 0h2m2 0h1m2 0h2m1 0h2m1 0h1m-33 1h1m3 0h1m1 0h3m4 0h3m4 0h1m1 0h1m1 0h2m2 0h1m1 0h2m-32 1h1m2 0h2m3 0h1m2 0h3m1 0h2m1 0h2m1 0h2m5 0h4m-32 1h1m2 0h4m5 0h1m1 0h4m2 0h1m1 0h1m1 0h2m1 0h3m2 0h1m-33 1h3m1 0h1m3 0h1m1 0h4m1 0h1m2 0h3m2 0h1m1 0h2m2 0h1m1 0h2m-33 1h2m1 0h1m1 0h2m1 0h3m2 0h1m1 0h4m3 0h1m2 0h2m1 0h2m1 0h1m-31 1h1m1 0h3m1 0h1m5 0h3m2 0h2m1 0h1m1 0h4m1 0h1m1 0h1m-31 1h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h1m2 0h3m2 0h1m1 0h2m1 0h1m1 0h2m3 0h1m-33 1h2m2 0h1m3 0h2m2 0h3m1 0h1m1 0h3m2 0h1m2 0h2m1 0h2m1 0h1m-33 1h1m1 0h2m2 0h1m1 0h1m1 0h7m4 0h2m1 0h2m1 0h2m1 0h2m-32 1h3m2 0h1m2 0h1m2 0h5m3 0h1m1 0h1m2 0h7m1 0h1m-32 1h6m1 0h2m1 0h1m2 0h1m2 0h2m3 0h1m1 0h2m1 0h3m1 0h2m-33 1h2m1 0h3m1 0h1m2 0h1m2 0h4m1 0h3m2 0h1m2 0h1m2 0h1m2 0h1m-33 1h1m3 0h3m2 0h1m1 0h4m5 0h1m1 0h1m1 0h1m3 0h2m1 0h1m-32 1h1m1 0h3m3 0h1m3 0h1m1 0h1m1 0h1m3 0h4m1 0h2m1 0h3m-31 1h1m1 0h1m1 0h1m1 0h2m1 0h3m1 0h2m2 0h2m1 0h1m1 0h7m1 0h1m1 0h1m-25 1h2m2 0h2m2 0h5m1 0h3m3 0h1m1 0h1m1 0h1m-33 1h7m3 0h4m1 0h3m2 0h2m1 0h2m1 0h1m1 0h1m1 0h1m-31 1h1m5 0h1m1 0h6m2 0h1m3 0h5m3 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m1 0h2m2 0h4m2 0h1m3 0h1m1 0h6m-30 1h1m1 0h3m1 0h1m1 0h3m1 0h4m1 0h9m2 0h1m2 0h2m-33 1h1m1 0h3m1 0h1m1 0h2m1 0h5m1 0h1m4 0h1m1 0h1m1 0h2m2 0h1m-31 1h1m5 0h1m8 0h1m2 0h1m1 0h2m4 0h1m1 0h3m-31 1h7m1 0h3m2 0h3m1 0h1m4 0h4m1 0h1m3 0h1"/></svg>
+        </div>
       </div>
     </div>
   </div>
@@ -367,7 +422,6 @@
   pull.dataset.id = "pull";
   pull.setAttribute("aria-label", "Pull peg");
   pull.setAttribute("aria-pressed", "false");
-  pull.textContent = "×";
   pull.addEventListener("click", () => selectColor(null));
   pegsClassic.appendChild(pull);
 
@@ -844,6 +898,29 @@
     const p = pointerPos(e);
     zoomAt(p.x, p.y, state.zoom * Math.exp(-e.deltaY * 0.0015));
   }, { passive: false });
+
+  const wordmark = document.getElementById("wordmark");
+  const share = document.getElementById("share");
+  function setShare(on) {
+    share.classList.toggle("on", on);
+    share.setAttribute("aria-hidden", on ? "false" : "true");
+    wordmark.setAttribute("aria-expanded", on ? "true" : "false");
+  }
+  wordmark.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setShare(!share.classList.contains("on"));
+  });
+  wordmark.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setShare(!share.classList.contains("on"));
+    }
+  });
+  share.addEventListener("click", () => setShare(false));
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") setShare(false);
+  });
+  if (/\bshare=1\b/.test(location.search)) setShare(true);
 
   const ro = new ResizeObserver(() => layout());
   ro.observe(canvas);
