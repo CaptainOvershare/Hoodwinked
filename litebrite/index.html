@@ -146,28 +146,58 @@
     touch-action: none;
     cursor: crosshair;
   }
-  .zoom-tools {
+  .zoom-tools,
+  .paper-tools {
     position: absolute;
-    right: 8px;
-    bottom: 8px;
     z-index: 2;
     display: flex;
     flex-direction: column;
     gap: 6px;
   }
-  .zoom-tools button {
+  .zoom-tools { right: 8px; bottom: 8px; }
+  .paper-tools { left: 8px; top: 8px; }
+  .zoom-tools button,
+  .paper-tools button {
     appearance: none;
-    width: 36px;
     height: 36px;
     border: 0;
     border-radius: 10px;
     background: rgba(8, 8, 10, 0.55);
     color: #f4efe4;
-    font: 800 20px/1 Nunito, ui-rounded, system-ui, sans-serif;
+    font: 800 13px/1 Nunito, ui-rounded, system-ui, sans-serif;
+    letter-spacing: 0.02em;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
     cursor: pointer;
   }
-  .zoom-tools button:active { background: rgba(8, 8, 10, 0.8); }
+  .zoom-tools button { width: 36px; font-size: 20px; }
+  .paper-tools button { width: auto; padding: 0 12px; }
+  .zoom-tools button:active,
+  .paper-tools button:active { background: rgba(8, 8, 10, 0.8); }
+  .paper-tools button[aria-pressed="true"] {
+    box-shadow: inset 0 0 0 1px #e3b341;
+    color: #f2d48a;
+  }
+  .paper-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .paper-list button {
+    appearance: none;
+    width: 100%;
+    height: 40px;
+    border: 0;
+    border-radius: 12px;
+    background: #1a1814;
+    color: #f4efe4;
+    font: 800 14px/1 Nunito, ui-rounded, system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .paper-list button[aria-pressed="true"] {
+    background: #2a2418;
+    box-shadow: inset 0 0 0 1px #e3b341;
+    color: #f2d48a;
+  }
   .share {
     position: absolute;
     inset: 0;
@@ -301,7 +331,17 @@
   }
   .tool.danger:active { background: #3a1515; }
   @media (min-width: 720px) {
-    .peg { width: 48px; height: 48px; }
+    html {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    body {
+      width: 430px;
+      height: min(100dvh - 24px, 900px);
+      margin: 0;
+      flex: none;
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     .peg { transition: none; }
@@ -318,9 +358,22 @@
   <div class="box">
     <div class="screen">
       <canvas id="board" width="720" height="960" aria-label="Light pegboard"></canvas>
+      <div class="paper-tools">
+        <button type="button" id="paperBtn" aria-label="Trace" aria-pressed="false" aria-expanded="false" aria-controls="papers">Trace</button>
+      </div>
       <div class="zoom-tools">
         <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
         <button type="button" id="zoomOut" aria-label="Zoom out">−</button>
+      </div>
+      <div class="share" id="papers" aria-hidden="true">
+        <div class="share-card" id="papersCard">
+          <p>Trace</p>
+          <span>Punch the dots to lite them</span>
+          <div class="paper-list">
+            <button type="button" data-paper="heart" aria-pressed="false">Heart</button>
+            <button type="button" data-paper="" aria-pressed="true">Off</button>
+          </div>
+        </div>
       </div>
       <div class="share" id="share" aria-hidden="true">
         <div class="share-card">
@@ -356,6 +409,37 @@
     { id: "white",  hex: "#f6f7ff" },
     { id: "black",  hex: "#3c4148" }
   ];
+  const PEG_CHAR = {
+    R: "red", O: "orange", Y: "yellow", G: "green",
+    C: "cyan", B: "blue", V: "violet", H: "hot",
+    W: "white", K: "black"
+  };
+  const PAPERS = {
+    heart: {
+      coarse: [
+        ".RR.RR.",
+        "RWRRRWR",
+        "RRRRRRR",
+        ".RRRRR.",
+        "..RRR..",
+        "...R..."
+      ],
+      fine: [
+        "...RRR...RRR...",
+        "..RWRRR.RRRWR..",
+        ".RRRRRRRRRRRRR.",
+        "RRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRR",
+        ".RRRRRRRRRRRRR.",
+        "..RRRRRRRRRRR..",
+        "...RRRRRRRRR...",
+        "....RRRRRRR....",
+        ".....RRRRR.....",
+        "......RRR......",
+        ".......R......."
+      ]
+    }
+  };
   const STORE = "hoodwinked.peglight.v1";
   const canvas = document.getElementById("board");
   const ctx = canvas.getContext("2d");
@@ -390,7 +474,8 @@
     panY: 0,
     pinching: false,
     pinch: null,
-    suppressPaint: false
+    suppressPaint: false,
+    paper: null
   };
   const pointers = new Map();
   const MIN_ZOOM = 1;
@@ -440,7 +525,13 @@
     return state.holes.some((h) => h.color);
   }
 
+  let punchHintTimer = 0;
+
   function selectColor(id) {
+    if (punchHintTimer) {
+      clearTimeout(punchHintTimer);
+      punchHintTimer = 0;
+    }
     const spec = id === null ? null : resolveColor(id);
     state.color = spec ? spec.id : null;
     disarmConfirms();
@@ -464,6 +555,83 @@
   function hexToRgb(hex) {
     const n = parseInt(hex.slice(1), 16);
     return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+
+  function scaleMap(map, targetRows, targetCols) {
+    const srcR = map.length;
+    const srcC = map.reduce((n, line) => Math.max(n, line.length), 0);
+    const rows = Math.max(srcR, targetRows);
+    const cols = Math.max(srcC, targetCols);
+    if (rows === srcR && cols === srcC) return map;
+    const out = [];
+    for (let r = 0; r < rows; r++) {
+      const sr = Math.min(srcR - 1, Math.floor(r * srcR / rows));
+      let line = "";
+      for (let c = 0; c < cols; c++) {
+        const sc = Math.min(map[sr].length - 1, Math.floor(c * srcC / cols));
+        line += map[sr][sc] || ".";
+      }
+      out.push(line);
+    }
+    return out;
+  }
+
+  function stampPaper() {
+    for (const hole of state.holes) hole.ghost = null;
+    const spec = state.paper ? PAPERS[state.paper] : null;
+    if (!spec) return;
+    const base = state.density === "coarse" ? spec.coarse : spec.fine;
+    if (!base || !base.length) return;
+    const map = scaleMap(
+      base,
+      Math.round(state.rows * 0.42),
+      Math.round(state.cols * 0.72)
+    );
+    const rows = map.length;
+    const cols = map.reduce((n, line) => Math.max(n, line.length), 0);
+    const r0 = Math.max(0, Math.floor((state.rows - rows) / 2));
+    const c0 = Math.max(0, Math.floor((state.cols - cols) / 2));
+    for (let pr = 0; pr < rows; pr++) {
+      const line = map[pr];
+      for (let pc = 0; pc < line.length; pc++) {
+        const color = PEG_CHAR[line[pc]];
+        if (!color) continue;
+        const hole = state.holes.find((h) => h.r === r0 + pr && h.c === c0 + pc);
+        if (hole) hole.ghost = color;
+      }
+    }
+  }
+
+  function syncPaperUi() {
+    const on = !!state.paper;
+    const paperBtn = document.getElementById("paperBtn");
+    paperBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    document.querySelectorAll("#papers [data-paper]").forEach((btn) => {
+      const id = btn.getAttribute("data-paper") || "";
+      btn.setAttribute("aria-pressed", (state.paper || "") === id ? "true" : "false");
+    });
+  }
+
+  function setPaper(id) {
+    state.paper = id && PAPERS[id] ? id : null;
+    stampPaper();
+    syncPaperUi();
+    persist();
+    draw();
+    if (state.paper) {
+      if (punchHintTimer) {
+        clearTimeout(punchHintTimer);
+        punchHintTimer = 0;
+      }
+      hint.textContent = "Punch the trace";
+      hint.style.color = "";
+      punchHintTimer = setTimeout(() => {
+        punchHintTimer = 0;
+        selectColor(state.color);
+      }, 1800);
+    } else {
+      selectColor(state.color);
+    }
   }
 
   function layout() {
@@ -508,7 +676,8 @@
           r, c,
           x: x0 + c * pitch,
           y: oy + r * rowPitch,
-          color: prev.get(r + "," + c) || null
+          color: prev.get(r + "," + c) || null,
+          ghost: null
         });
       }
     }
@@ -517,6 +686,7 @@
     state.rows = rows;
     state.radius = radius;
     state.pitch = pitch;
+    stampPaper();
     clampCamera();
     draw();
   }
@@ -537,6 +707,22 @@
       ctx.fillStyle = leak;
       ctx.arc(x, y, rad, 0, Math.PI * 2);
       ctx.fill();
+      if (h.ghost) {
+        const spec = resolveColor(h.ghost);
+        if (!spec) return;
+        const rgb = hexToRgb(spec.hex);
+        const glow = ctx.createRadialGradient(x, y, 0, x, y, rad * 1.05);
+        glow.addColorStop(0, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0.32)");
+        glow.addColorStop(1, "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0)");
+        ctx.beginPath();
+        ctx.fillStyle = glow;
+        ctx.arc(x, y, rad * 1.05, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle = "rgba(" + rgb.r + "," + rgb.g + "," + rgb.b + ",0.42)";
+        ctx.arc(x, y, rad * 0.58, 0, Math.PI * 2);
+        ctx.fill();
+      }
       return;
     }
     const spec = resolveColor(h.color);
@@ -776,6 +962,7 @@
     localStorage.setItem(STORE, JSON.stringify({
       density: state.density,
       color: state.color,
+      paper: state.paper,
       cells
     }));
   }
@@ -794,9 +981,11 @@
   if (saved) {
     if (saved.density === "coarse" || saved.density === "fine") state.density = saved.density;
     if (saved.color === null || COLORS.some((c) => c.id === saved.color)) selectColor(saved.color);
+    if (saved.paper && PAPERS[saved.paper]) state.paper = saved.paper;
   } else {
     selectColor(state.color);
   }
+  if (/\bpaper=heart\b/.test(location.search)) state.paper = "heart";
   densityBtn.setAttribute("aria-pressed", state.density === "coarse" ? "true" : "false");
   densityBtn.textContent = state.density === "coarse" ? "Little pegs" : "Big pegs";
 
@@ -917,14 +1106,40 @@
     }
   });
   share.addEventListener("click", () => setShare(false));
+  const papers = document.getElementById("papers");
+  const papersCard = document.getElementById("papersCard");
+  const paperBtn = document.getElementById("paperBtn");
+  function setPapers(on) {
+    papers.classList.toggle("on", on);
+    papers.setAttribute("aria-hidden", on ? "false" : "true");
+    paperBtn.setAttribute("aria-expanded", on ? "true" : "false");
+    if (on) setShare(false);
+  }
+  paperBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setPapers(!papers.classList.contains("on"));
+  });
+  papers.addEventListener("click", () => setPapers(false));
+  papersCard.addEventListener("click", (e) => e.stopPropagation());
+  papers.querySelectorAll("[data-paper]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setPaper(btn.getAttribute("data-paper") || "");
+      setPapers(false);
+    });
+  });
   window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") setShare(false);
+    if (e.key === "Escape") {
+      setShare(false);
+      setPapers(false);
+    }
   });
   if (/\bshare=1\b/.test(location.search)) setShare(true);
+  if (/\bpapers=1\b/.test(location.search)) setPapers(true);
 
   const ro = new ResizeObserver(() => layout());
   ro.observe(canvas);
   layout();
+  syncPaperUi();
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(() => layout());
   }
